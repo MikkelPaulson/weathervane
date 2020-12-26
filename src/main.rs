@@ -101,7 +101,11 @@ impl Display {
 
     pub fn send_data(&mut self, data: &[u8]) {
         self.pin_dc.set_high();
-        self.spi.write(data).expect("Unable to write data.");
+        for i in 0..=(data.len() / 4096) {
+            self.spi
+                .write(&data[i..i + 4096])
+                .expect("Unable to write data.");
+        }
     }
 
     pub fn init(&mut self) {
