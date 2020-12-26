@@ -16,6 +16,7 @@ fn main() {
     thread::sleep(Duration::from_secs(5));
 
     println!("display.sleep();");
+    display.init();
     display.clear();
     display.sleep();
 }
@@ -206,11 +207,11 @@ impl Display {
         self.send(0x4E, &[0x00, 0x00]);
         self.send(0x4F, &[0x00, 0x00]);
 
-        for y in 0..Self::DISPLAY_HEIGHT {
+        for y in 0..Self::DISPLAY_WIDTH {
             if (y / 8) % 2 == 0 {
-                self.send(0x24, &[0xff, 0x00].repeat(Self::DISPLAY_WIDTH / 16));
+                self.send(0x24, &[0xff, 0x00].repeat(Self::DISPLAY_HEIGHT / 16));
             } else {
-                self.send(0x24, &[0x00, 0xff].repeat(Self::DISPLAY_WIDTH / 16));
+                self.send(0x24, &[0x00, 0xff].repeat(Self::DISPLAY_HEIGHT / 16));
             }
         }
 
