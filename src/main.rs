@@ -208,7 +208,7 @@ impl Display {
         self.send(0x4F, &[0x00, 0x00]);
 
         for _ in 0..Self::DISPLAY_HEIGHT {
-            self.send(0x24, &[0xff, 0x00].repeat(Self::DISPLAY_WIDTH / 16));
+            self.send(0x24, &[0x00].repeat(Self::DISPLAY_WIDTH / 16));
         }
 
         self.load_look_up_table();
