@@ -11,7 +11,12 @@ fn main() {
 
     println!("display.checkerboard();");
     display.checkerboard();
+
+    println!("sleeping");
+    thread::sleep(Duration::from_secs(5));
+
     println!("display.sleep();");
+    display.clear();
     display.sleep();
 }
 
@@ -188,11 +193,13 @@ impl Display {
 
     pub fn sleep(&mut self) {
         println!("0x50");
-        self.send(0x50, &[0xF7]);
+        self.send_command(0x50);
+        self.send_data(&[0xF7]);
         println!("0x02");
-        self.send(0x02, &[]);
+        self.send_command(0x02);
         println!("0x07");
-        self.send(0x07, &[0xA5]);
+        self.send_command(0x07);
+        self.send_data(&[0xA5]);
     }
 
     pub fn checkerboard(&mut self) {
