@@ -204,11 +204,15 @@ impl Display {
         self.send(0x4E, &[0x00, 0x00]);
         self.send(0x4F, &[0x00, 0x00]);
 
-        for _ in 0..(Self::DISPLAY_HEIGHT / 2) {
-            self.send(0x24, &[0x00].repeat(Self::DISPLAY_WIDTH / 8));
-            self.send(0x26, &[0x00].repeat(Self::DISPLAY_WIDTH / 8));
-            self.send(0x24, &[0xFF].repeat(Self::DISPLAY_WIDTH / 8));
-            self.send(0x26, &[0xFF].repeat(Self::DISPLAY_WIDTH / 8));
+        for y in 0..Self::DISPLAY_HEIGHT {
+            self.send(
+                0x24,
+                &[0xFF, 0x00].repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
+            );
+            self.send(
+                0x26,
+                &[0xFF, 0x00].repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
+            );
         }
 
         self.load_look_up_table();
