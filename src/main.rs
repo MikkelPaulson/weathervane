@@ -3,7 +3,7 @@ use std::thread;
 use std::time::Duration;
 
 fn main() {
-    let mut display = Display::new(DisplayMode::BlackAndWhite);
+    let mut display = Display::new(DisplayMode::Grayscale);
     println!("display.init();");
     display.init();
     println!("display.clear();");
@@ -196,22 +196,17 @@ impl Display {
     }
 
     pub fn sleep(&mut self) {
-        println!("0x50");
-        self.send_command(0x50);
-        self.send_data(&[0xF7]);
-        println!("0x02");
-        self.send_command(0x02);
-        println!("0x07");
-        self.send_command(0x07);
-        self.send_data(&[0xA5]);
+        self.send(0x50, &[0xF7]);
+        self.send(0x02, &[]);
+        self.send(0x07, &[0xA5]);
     }
 
     pub fn checkerboard(&mut self) {
         self.send(0x4E, &[0x00, 0x00]);
         self.send(0x4F, &[0x00, 0x00]);
 
-        for _ in 0..Self::DISPLAY_HEIGHT {
-            self.send(0x24, &[0x00, 0xFF].repeat(Self::DISPLAY_WIDTH / 16));
+        for _ in 0..Self::DISPLAY_WIDTH {
+            self.send(0x24, &[0x00, 0xFF].repeat(Self::DISPLAY_HEIGHT / 16));
         }
 
         self.load_look_up_table();
