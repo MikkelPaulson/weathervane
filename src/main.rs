@@ -205,7 +205,7 @@ impl Display {
         self.send(0x4F, &[0x00, 0x00]);
 
         for y in 0..Self::DISPLAY_HEIGHT {
-            let sequence = if y / 16 % 2 == 0 {
+            let sequence = if y / 8 % 2 == 0 {
                 [0xFF, 0x00]
             } else {
                 [0x00, 0xFF]
