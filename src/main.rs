@@ -38,33 +38,29 @@ impl Display {
     const DISPLAY_HEIGHT: usize = 480;
 
     pub fn new(mode: DisplayMode) -> Self {
-        let spi = spi::Spi::new(
-            spi::Bus::Spi0,
-            spi::SlaveSelect::Ss0,
-            10_000_000, // 10 MHz = 100 ns
-            spi::Mode::Mode0,
-        )
-        .expect("Unable to initialize SPI connection.");
-
         let gpio = gpio::Gpio::new().expect("Unable to connect to GPIO.");
-        let (pin_dc, pin_rst, pin_busy) = (
-            gpio.get(Self::PIN_DC)
-                .expect("Unable to acquire data/command pin.")
-                .into_output(),
-            gpio.get(Self::PIN_RST)
-                .expect("Unable to acquire reset pin.")
-                .into_output(),
-            gpio.get(Self::PIN_BUSY)
-                .expect("Unable to acquire busy pin.")
-                .into_input(),
-        );
 
         Self {
             mode,
-            spi,
-            pin_dc,
-            pin_rst,
-            pin_busy,
+            spi: spi::Spi::new(
+                spi::Bus::Spi0,
+                spi::SlaveSelect::Ss0,
+                10_000_000, // 10 MHz = 100 ns
+                spi::Mode::Mode0,
+            )
+            .expect("Unable to initialize SPI connection."),
+            pin_dc: gpio
+                .get(Self::PIN_DC)
+                .expect("Unable to acquire data/command pin.")
+                .into_output(),
+            pin_rst: gpio
+                .get(Self::PIN_RST)
+                .expect("Unable to acquire reset pin.")
+                .into_output(),
+            pin_busy: gpio
+                .get(Self::PIN_BUSY)
+                .expect("Unable to acquire busy pin.")
+                .into_input(),
         }
     }
 
@@ -79,8 +75,12 @@ impl Display {
     }
 
     pub fn wait_for_busy(&mut self) {
-        while self.pin_busy.is_high() {
-            thread::sleep(Duration::from_millis(200))
+        if self.pin_busy.is_high() {
+            print!("Waiting for device...");
+            while self.pin_busy.is_high() {
+                thread::sleep(Duration::from_millis(200));
+            }
+            println!("Done");
         }
     }
 
@@ -113,7 +113,9 @@ impl Display {
         thread::sleep(Duration::from_millis(300));
 
         self.send(0x46, &[0xF7]);
+        self.wait_for_busy();
         self.send(0x47, &[0xF7]);
+        self.wait_for_busy();
 
         // setting gate number
         self.send(0x01, &[0xDF, 0x01, 0x00]);
@@ -190,6 +192,7 @@ impl Display {
         }
 
         self.send(0x20, &[]);
+        self.wait_for_busy();
     }
 
     pub fn sleep(&mut self) {
@@ -214,6 +217,7 @@ impl Display {
         self.load_look_up_table();
 
         self.send(0x20, &[]);
+        self.wait_for_busy();
     }
 
     fn load_look_up_table(&mut self) {
