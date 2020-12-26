@@ -41,7 +41,7 @@ impl Display {
         .expect("Unable to initialize SPI connection.");
 
         let gpio = gpio::Gpio::new().expect("Unable to connect to GPIO.");
-        let (pin_dc, pin_rst, mut pin_busy) = (
+        let (pin_dc, pin_rst, pin_busy) = (
             gpio.get(Self::PIN_DC)
                 .expect("Unable to acquire data/command pin.")
                 .into_output(),
@@ -52,10 +52,6 @@ impl Display {
                 .expect("Unable to acquire busy pin.")
                 .into_input(),
         );
-
-        pin_busy
-            .set_interrupt(gpio::Trigger::FallingEdge)
-            .expect("Unable to define busy pin trigger.");
 
         Self {
             mode,
@@ -77,10 +73,8 @@ impl Display {
     }
 
     pub fn wait_for_busy(&mut self) {
-        if self.pin_busy.is_high() {
-            self.pin_busy
-                .poll_interrupt(false, None)
-                .expect("Unable to wait for busy pin.");
+        while self.pin_busy.is_high() {
+            thread::sleep(Duration::from_millis(200))
         }
     }
 
@@ -193,8 +187,11 @@ impl Display {
     }
 
     pub fn sleep(&mut self) {
+        println!("0x50");
         self.send(0x50, &[0xF7]);
+        println!("0x02");
         self.send(0x02, &[]);
+        println!("0x07");
         self.send(0x07, &[0xA5]);
     }
 
