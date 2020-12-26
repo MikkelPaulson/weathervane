@@ -4,10 +4,14 @@ use std::time::Duration;
 
 fn main() {
     let mut display = Display::new(DisplayMode::BlackAndWhite);
+    println!("display.init();");
     display.init();
+    println!("display.clear();");
     display.clear();
 
+    println!("display.checkerboard();");
     display.checkerboard();
+    println!("display.sleep();");
     display.sleep();
 }
 
