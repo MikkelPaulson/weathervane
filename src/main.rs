@@ -13,7 +13,7 @@ fn main() {
     display.checkerboard();
 
     println!("sleeping");
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(10));
 
     println!("display.sleep();");
     display.init();
@@ -85,7 +85,6 @@ impl Display {
     }
 
     pub fn send(&mut self, command: u8, data: &[u8]) {
-        self.wait_for_busy();
         self.send_command(command);
         if !data.is_empty() {
             self.send_data(data);
@@ -173,7 +172,7 @@ impl Display {
         self.send(0x4F, &[0x00, 0x00]);
         self.send(
             0x24,
-            &[0xff].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
+            &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
         );
 
         if self.mode == DisplayMode::Grayscale {
@@ -181,7 +180,7 @@ impl Display {
             self.send(0x4F, &[0x00, 0x00]);
             self.send(
                 0x26,
-                &[0xff].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
+                &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
             );
         }
 
@@ -205,8 +204,11 @@ impl Display {
         self.send(0x4E, &[0x00, 0x00]);
         self.send(0x4F, &[0x00, 0x00]);
 
-        for _ in 0..Self::DISPLAY_WIDTH {
-            self.send(0x24, &[0x00, 0xFF].repeat(Self::DISPLAY_HEIGHT / 16));
+        for _ in 0..(Self::DISPLAY_HEIGHT / 2) {
+            self.send(0x24, &[0x00].repeat(Self::DISPLAY_WIDTH / 8));
+            self.send(0x26, &[0x00].repeat(Self::DISPLAY_WIDTH / 8));
+            self.send(0x24, &[0xFF].repeat(Self::DISPLAY_WIDTH / 8));
+            self.send(0x26, &[0xFF].repeat(Self::DISPLAY_WIDTH / 8));
         }
 
         self.load_look_up_table();
