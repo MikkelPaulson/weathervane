@@ -54,7 +54,7 @@ impl Display {
         );
 
         pin_busy
-            .set_interrupt(gpio::Trigger::RisingEdge)
+            .set_interrupt(gpio::Trigger::FallingEdge)
             .expect("Unable to define busy pin trigger.");
 
         Self {
@@ -77,7 +77,7 @@ impl Display {
     }
 
     pub fn wait_for_busy(&mut self) {
-        if self.pin_busy.is_low() {
+        if self.pin_busy.is_high() {
             self.pin_busy
                 .poll_interrupt(false, None)
                 .expect("Unable to wait for busy pin.");
