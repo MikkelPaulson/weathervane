@@ -42,7 +42,7 @@ fn draw_sample(display: &mut Display) {
     let (mut channel1, mut channel2) = (Vec::new(), Vec::new());
 
     for row in target
-        .to_image_buf(piet::ImageFormat::Rgb)
+        .to_image_buf(piet::ImageFormat::RgbaPremul)
         .unwrap()
         .pixel_colors()
     {
