@@ -1,6 +1,9 @@
 use std::thread;
 use std::time::Duration;
 
+use resvg;
+use usvg;
+
 use weathervane::display::Display;
 
 fn main() {
@@ -28,6 +31,50 @@ fn main() {
     display.sleep();
 }
 
+fn draw_sample(display: &mut Display) {
+    let rust_logo =
+        usvg::Tree::from_str(&include_str!("rust.svg"), &usvg::Options::default()).unwrap();
+
+    let image_size = rust_logo.svg_node().size;
+    let display_size = usvg::ScreenSize::new(
+        Display::DISPLAY_WIDTH as u32,
+        Display::DISPLAY_HEIGHT as u32,
+    )
+    .unwrap();
+
+    let fit = if image_size.width()
+        > display_size.width() as f64 / display_size.height() as f64 * image_size.height()
+    {
+        usvg::FitTo::Width(display_size.width())
+    } else {
+        usvg::FitTo::Height(display_size.height())
+    };
+
+    let image = resvg::render(&rust_logo, fit, None).unwrap();
+    let image_data = image.data();
+
+    let (channel1, channel2): (Vec<u8>, Vec<u8>) = image_data[..]
+        .chunks(8 * 4) // 8 pixels @ RGBA
+        .map(|chunk: &[u8]| {
+            chunk
+                .chunks_exact(4) // chunk by pixel (RGBA)
+                .enumerate()
+                .map(|(index, pixel)| {
+                    let color = ((pixel[0] + pixel[1] + pixel[2]) as f64
+                        * (1. - (pixel[3] as f64 / 255.)))
+                        .round() as u8;
+                    (
+                        (color & 0x02 / 0x02) << (7 - index),
+                        color & 0x01 << (7 - index),
+                    )
+                })
+                .fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1))
+        })
+        .unzip();
+
+    display.draw(&channel1, &channel2);
+}
+/*
 fn draw_sample(display: &mut Display) {
     let mut device = piet_common::Device::new().unwrap();
     let mut target = device
@@ -73,3 +120,4 @@ fn draw_sample(display: &mut Display) {
 
     display.draw(&channel1, &channel2);
 }
+*/

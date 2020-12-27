@@ -8,8 +8,5 @@ edition = "2018"
 
 [dependencies]
 rppal = "0.11.3"
-piet-common = "0.3.0"
-
-[dependencies.piet]
-version = "0.3.0"
-features = ["samples"]
+resvg = "0.12.0"
+usvg = "0.12.0"
