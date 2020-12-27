@@ -7,6 +7,7 @@ use usvg;
 use weathervane::display::Display;
 
 fn main() {
+    //draw_sample();
     let mut display = Display::new();
     println!("display.init();");
     display.init();
@@ -60,13 +61,25 @@ fn draw_sample(display: &mut Display) {
                 .chunks_exact(4) // chunk by pixel (RGBA)
                 .enumerate()
                 .map(|(index, pixel)| {
-                    let color = ((pixel[0] + pixel[1] + pixel[2]) as f64
-                        * (1. - (pixel[3] as f64 / 255.)))
+                    /*
+                    let color = ((pixel[0] + pixel[1] + pixel[2]) as f64 * (pixel[3] as f64 / 255.))
                         .round() as u8;
-                    (
-                        (color & 0x02 / 0x02) << (7 - index),
-                        color & 0x01 << (7 - index),
-                    )
+                    */
+                    let color = (pixel[3] as f64 / 255. * 3.).round() as u8;
+                    let result = (
+                        if color & 0x02 == 0x02 {
+                            0
+                        } else {
+                            0x80 >> index
+                        },
+                        if color & 0x01 == 0x01 {
+                            0
+                        } else {
+                            0x80 >> index
+                        },
+                    );
+                    println!("({}, {:?}): ({}, {:?})", index, pixel, color, result);
+                    result
                 })
                 .fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1))
         })
