@@ -57,11 +57,11 @@ fn draw_sample(display: &mut Display) {
             let color = ((r + g + b) * a) as u8;
 
             if color & 0x02 == 0x02 {
-                channel1_value |= 1 << index;
+                channel1_value |= 1 << (index % 8);
             }
 
             if color & 0x01 == 0x01 {
-                channel2_value |= 1 << index;
+                channel2_value |= 1 << (index % 8);
             }
 
             if index % 8 == 7 {
