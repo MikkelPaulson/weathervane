@@ -42,7 +42,7 @@ fn draw_sample(display: &mut Display) {
     let (mut channel1, mut channel2) = (Vec::new(), Vec::new());
 
     for row in target
-        .to_image_buf(piet::ImageFormat::Grayscale)
+        .to_image_buf(piet::ImageFormat::Rgb)
         .unwrap()
         .pixel_colors()
     {
@@ -54,7 +54,7 @@ fn draw_sample(display: &mut Display) {
             }
 
             let (r, g, b, a) = pixel.as_rgba();
-            let color = ((r + g + b) / 3. * a * 3.) as u8;
+            let color = ((r + g + b) * a) as u8;
 
             if color & 0x02 == 0x02 {
                 channel1_value |= 1 << index;
