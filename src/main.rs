@@ -7,7 +7,6 @@ use usvg;
 use weathervane::display::Display;
 
 fn main() {
-    //draw_sample();
     let mut display = Display::new();
     println!("display.init();");
     display.init();
@@ -61,11 +60,8 @@ fn draw_sample(display: &mut Display) {
                 .chunks_exact(4) // chunk by pixel (RGBA)
                 .enumerate()
                 .map(|(index, pixel)| {
-                    /*
-                    let color = ((pixel[0] + pixel[1] + pixel[2]) as f64 * (pixel[3] as f64 / 255.))
-                        .round() as u8;
-                    */
-                    let color = (pixel[3] as f64 / 255. * 3.).round() as u8;
+                    // For now, we just render the alpha channel.
+                    let color = (pixel[3] as f64 / 255. * 2.).round() as u8;
                     let result = (
                         if color & 0x02 == 0x02 {
                             0
@@ -78,10 +74,9 @@ fn draw_sample(display: &mut Display) {
                             0x80 >> index
                         },
                     );
-                    println!("({}, {:?}): ({}, {:?})", index, pixel, color, result);
                     result
                 })
-                .fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1))
+                .fold((0, 0), |a, b| (a.0 | b.0, a.1 | b.1))
         })
         .unzip();
 
