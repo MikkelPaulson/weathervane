@@ -13,15 +13,15 @@ fn main() {
 
     println!("display.clear();");
     display.clear();
-    println!("draw_sample();");
-    draw_sample(&mut display);
+    println!("display.checkerboard();");
+    display.checkerboard();
     println!("sleeping");
     thread::sleep(Duration::from_secs(10));
 
     println!("display.clear();");
     display.clear();
-    println!("display.checkerboard();");
-    display.checkerboard();
+    println!("draw_sample();");
+    draw_sample(&mut display);
     println!("sleeping");
     thread::sleep(Duration::from_secs(10));
 
@@ -61,7 +61,7 @@ fn draw_sample(display: &mut Display) {
                 .enumerate()
                 .map(|(index, pixel)| {
                     // For now, we just render the alpha channel.
-                    let color = (pixel[3] as f64 / 255. * 2.).round() as u8;
+                    let color = (pixel[3] as f64 / 255. * 3.).round() as u8;
                     let result = (
                         if color & 0x01 == 0x01 {
                             0
