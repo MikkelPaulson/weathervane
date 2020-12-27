@@ -63,12 +63,12 @@ fn draw_sample(display: &mut Display) {
                     // For now, we just render the alpha channel.
                     let color = (pixel[3] as f64 / 255. * 2.).round() as u8;
                     let result = (
-                        if color & 0x02 == 0x02 {
+                        if color & 0x01 == 0x01 {
                             0
                         } else {
                             0x80 >> index
                         },
-                        if color & 0x01 == 0x01 {
+                        if color & 0x02 == 0x02 {
                             0
                         } else {
                             0x80 >> index
