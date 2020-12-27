@@ -3,7 +3,7 @@ use std::thread;
 use std::time::Duration;
 
 fn main() {
-    let mut display = Display::new(DisplayMode::Grayscale);
+    let mut display = Display::new();
     println!("display.init();");
     display.init();
     println!("display.clear();");
@@ -37,11 +37,11 @@ impl Display {
     const DISPLAY_WIDTH: usize = 280;
     const DISPLAY_HEIGHT: usize = 480;
 
-    pub fn new(mode: DisplayMode) -> Self {
+    pub fn new() -> Self {
         let gpio = gpio::Gpio::new().expect("Unable to connect to GPIO.");
 
         Self {
-            mode,
+            mode: DisplayMode::Grayscale,
             spi: spi::Spi::new(
                 spi::Bus::Spi0,
                 spi::SlaveSelect::Ss0,
@@ -144,9 +144,11 @@ impl Display {
         self.send(
             0x37,
             match self.mode {
+                /*
                 DisplayMode::BlackAndWhite => {
                     &[0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x4F, 0xFF, 0xFF, 0xFF, 0xFF]
                 }
+                */
                 DisplayMode::Grayscale => {
                     &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
                 }
@@ -198,11 +200,26 @@ impl Display {
         self.send(0x50, &[0xF7]);
         self.send(0x02, &[]);
         self.send(0x07, &[0xA5]);
+
+        self.pin_dc.set_low();
+        self.pin_rst.set_low();
+    }
+
+    pub fn draw(&mut self, channel1: &[u8], channel2: &[u8]) {
+        self.send(0x4E, &[0x00, 0x00]);
+        self.send(0x4F, &[0x00, 0x00]);
+
+        self.send(0x24, &channel1);
+        self.send(0x26, &channel2);
+
+        self.load_look_up_table();
+
+        self.send(0x20, &[]);
+        self.wait_for_busy();
     }
 
     pub fn checkerboard(&mut self) {
-        self.send(0x4E, &[0x00, 0x00]);
-        self.send(0x4F, &[0x00, 0x00]);
+        let mut channel = Vec::with_capacity(Self::DISPLAY_HEIGHT * Self::DISPLAY_WIDTH / 8);
 
         for y in 0..Self::DISPLAY_HEIGHT {
             let sequence = if y / 8 % 2 == 0 {
@@ -211,26 +228,19 @@ impl Display {
                 [0x00, 0xFF]
             };
 
-            self.send(
-                0x24,
-                &sequence.repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
-            );
-            self.send(
-                0x26,
+            channel.extend_from_slice(
                 &sequence.repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
             );
         }
 
-        self.load_look_up_table();
-
-        self.send(0x20, &[]);
-        self.wait_for_busy();
+        self.draw(&channel[..], &channel[..]);
     }
 
     fn load_look_up_table(&mut self) {
         self.send(
             0x32,
             match self.mode {
+                /*
                 DisplayMode::BlackAndWhite => &[
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //1
                     0x01, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //2
@@ -244,6 +254,7 @@ impl Display {
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //10
                     0x22, 0x22, 0x22, 0x22, 0x22,
                 ],
+                */
                 DisplayMode::Grayscale => &[
                     0x2A, 0x06, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //1
                     0x28, 0x06, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //2
@@ -264,6 +275,6 @@ impl Display {
 
 #[derive(PartialEq)]
 enum DisplayMode {
-    BlackAndWhite,
+    //BlackAndWhite,
     Grayscale,
 }
