@@ -43,7 +43,6 @@ impl Display {
     }
 
     pub fn reset(&mut self) {
-        self.wait_for_busy();
         self.hardware_interface
             .set_level(GpioOutputPin::Reset, gpio::Level::High);
         thread::sleep(Duration::from_millis(30));
@@ -161,12 +160,12 @@ impl Display {
             .set_level(GpioOutputPin::Reset, gpio::Level::Low);
     }
 
-    pub fn draw(&mut self, channel1: &[u8], channel2: &[u8]) {
+    pub fn draw(&mut self, register1: &[u8], register2: &[u8]) {
         self.send(0x4E, &[0x00, 0x00]);
         self.send(0x4F, &[0x00, 0x00]);
 
-        self.send(0x24, &channel1);
-        self.send(0x26, &channel2);
+        self.send(0x24, &register1);
+        self.send(0x26, &register2);
 
         self.load_look_up_table();
         self.send(0x22, &[0xC7]);
@@ -175,7 +174,7 @@ impl Display {
     }
 
     pub fn checkerboard(&mut self) {
-        let mut channel = Vec::with_capacity(Self::DISPLAY_HEIGHT * Self::DISPLAY_WIDTH / 8);
+        let mut register = Vec::with_capacity(Self::DISPLAY_HEIGHT * Self::DISPLAY_WIDTH / 8);
 
         for y in 0..Self::DISPLAY_HEIGHT {
             let sequence = if y / 8 % 2 == 0 {
@@ -184,12 +183,12 @@ impl Display {
                 [0x00, 0xFF]
             };
 
-            channel.extend_from_slice(
+            register.extend_from_slice(
                 &sequence.repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
             );
         }
 
-        self.draw(&channel[..], &channel[..]);
+        self.draw(&register[..], &register[..]);
     }
 
     fn load_look_up_table(&mut self) {
@@ -210,6 +209,86 @@ impl Display {
             ],
         );
     }
+}
+
+enum Command<'a> {
+    /// 0x01 "setting gaet number" in example code
+    SetGateNumber,
+
+    /// 0x02 "power off" in example code
+    PowerOff,
+
+    /// 0x03 "Gate Driving voltage Control" in documentation
+    SetGateVoltage,
+
+    /// 0x04 "Source Driving voltage Control" in documentation
+    SetSourceVoltage,
+
+    /// 0x07 "deep sleep" in example code
+    Sleep,
+
+    /// 0x0C "set booster strength" in example code
+    SetBoosterStrength,
+
+    /// 0x11 "set data entry sequence" in example code
+    SetDataEntrySequence,
+
+    /// 0x12 Not documented
+    Unknown0x12,
+
+    /// 0x18 "set internal sensor on" in example code
+    SetInternalSensorOn,
+
+    /// 0x20 "Master Activation" in documentation (activate display update sequence)
+    Display,
+
+    /// 0x21 "Display Update Control 1" in documentation
+    SetRegisterMode,
+
+    /// 0x22 "Display Update Control 2" in documentation
+    UpdateSequence,
+
+    /// 0x24 Write RAM (register 1)
+    WriteRegister1(&'a [u8]),
+
+    /// 0x26 Write RAM (register 2)
+    WriteRegister2(&'a [u8]),
+
+    /// 0x2C "set vcom value" in example code
+    SetVComValue,
+
+    /// 0x32 "Write LUT register" in documentation
+    WriteLookUpTableRegister(&'a [u8]),
+
+    /// 0x37 "set display option, these setting turn on previous function" in example code
+    SetDisplayOption(&'a [u8]),
+
+    /// 0x3C "set border" in example code
+    SetBorder,
+
+    /// 0x44 "set X direction start/end position of RAM" in example code
+    SetXRamPosition(&'a [u8; 4]),
+
+    /// 0x45 "set Y direction start/end position of RAM" in example code
+    SetYRamPosition(&'a [u8; 4]),
+
+    /// 0x46 Not documented
+    Unknown0x46,
+
+    /// 0x47 Not documented
+    Unknown0x47,
+
+    /// 0x49 Not documented
+    Unknown0x49,
+
+    /// 0x4E Not documented
+    Unknown0x4E,
+
+    /// 0x4F Not documented
+    Unknown0x4F,
+
+    /// 0x50 Not documented
+    Unknown0x50,
 }
 
 struct DisplayHardwareInterface {
