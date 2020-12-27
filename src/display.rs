@@ -15,8 +15,8 @@ impl Display {
     const PIN_RST: u8 = 17; // External reset pin (low = reset)
     const PIN_BUSY: u8 = 24; // Busy output pin (low = busy)
 
-    const DISPLAY_WIDTH: usize = 280;
-    const DISPLAY_HEIGHT: usize = 480;
+    pub const DISPLAY_WIDTH: usize = 280;
+    pub const DISPLAY_HEIGHT: usize = 480;
 
     pub fn new() -> Self {
         let gpio = gpio::Gpio::new().expect("Unable to connect to GPIO.");
