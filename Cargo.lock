@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "weatherman"
+name = "weathervane"
 version = "0.1.0"
 dependencies = [
  "rppal",

@@ -1,4 +1,4 @@
-# Weatherman
+# Weathervane
 
 A display that will live next to my front door and display the current weather
 conditions. Components:

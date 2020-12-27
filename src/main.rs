@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
-use weatherman::display::Display;
+use weathervane::display::Display;
 
 fn main() {
     let mut display = Display::new();
