@@ -3,10 +3,7 @@ use std::thread;
 use std::time::Duration;
 
 pub struct Display {
-    spi: spi::Spi,
-    pin_dc: gpio::OutputPin,
-    pin_rst: gpio::OutputPin,
-    pin_busy: gpio::InputPin,
+    hardware_interface: Box<dyn HardwareInterface>,
 }
 
 impl Display {
@@ -21,42 +18,47 @@ impl Display {
         let gpio = gpio::Gpio::new().expect("Unable to connect to GPIO.");
 
         Self {
-            spi: spi::Spi::new(
-                spi::Bus::Spi0,
-                spi::SlaveSelect::Ss0,
-                10_000_000, // 10 MHz = 100 ns
-                spi::Mode::Mode0,
-            )
-            .expect("Unable to initialize SPI connection."),
-            pin_dc: gpio
-                .get(Self::PIN_DC)
-                .expect("Unable to acquire data/command pin.")
-                .into_output(),
-            pin_rst: gpio
-                .get(Self::PIN_RST)
-                .expect("Unable to acquire reset pin.")
-                .into_output(),
-            pin_busy: gpio
-                .get(Self::PIN_BUSY)
-                .expect("Unable to acquire busy pin.")
-                .into_input(),
+            hardware_interface: Box::new(DisplayHardwareInterface {
+                spi: spi::Spi::new(
+                    spi::Bus::Spi0,
+                    spi::SlaveSelect::Ss0,
+                    10_000_000, // 10 MHz = 100 ns
+                    spi::Mode::Mode0,
+                )
+                .expect("Unable to initialize SPI connection."),
+                pin_dc: gpio
+                    .get(Self::PIN_DC)
+                    .expect("Unable to acquire data/command pin.")
+                    .into_output(),
+                pin_rst: gpio
+                    .get(Self::PIN_RST)
+                    .expect("Unable to acquire reset pin.")
+                    .into_output(),
+                pin_busy: gpio
+                    .get(Self::PIN_BUSY)
+                    .expect("Unable to acquire busy pin.")
+                    .into_input(),
+            }),
         }
     }
 
     pub fn reset(&mut self) {
         self.wait_for_busy();
-        self.pin_rst.set_high();
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::High);
         thread::sleep(Duration::from_millis(30));
-        self.pin_rst.set_low();
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
         thread::sleep(Duration::from_millis(3));
-        self.pin_rst.set_high();
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::High);
         thread::sleep(Duration::from_millis(30));
     }
 
     pub fn wait_for_busy(&mut self) {
-        if self.pin_busy.is_high() {
+        if self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High {
             print!("Waiting for device...");
-            while self.pin_busy.is_high() {
+            while self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High {
                 thread::sleep(Duration::from_millis(200));
             }
             println!("Done");
@@ -71,16 +73,20 @@ impl Display {
     }
 
     pub fn send_command(&mut self, command: u8) {
-        self.pin_dc.set_low();
-        self.spi
-            .write(&[command])
+        self.hardware_interface
+            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
+        self.hardware_interface
+            .write_to_spi(&[command])
             .expect("Unable to write command.");
     }
 
     pub fn send_data(&mut self, data: &[u8]) {
-        self.pin_dc.set_high();
+        self.hardware_interface
+            .set_level(GpioOutputPin::DataCommand, gpio::Level::High);
         for chunk in data[..].chunks(4096) {
-            self.spi.write(&chunk).expect("Unable to write data.");
+            self.hardware_interface
+                .write_to_spi(&chunk)
+                .expect("Unable to write data.");
         }
     }
 
@@ -149,8 +155,10 @@ impl Display {
         self.send(0x02, &[]);
         self.send(0x07, &[0xA5]);
 
-        self.pin_dc.set_low();
-        self.pin_rst.set_low();
+        self.hardware_interface
+            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
     }
 
     pub fn draw(&mut self, channel1: &[u8], channel2: &[u8]) {
@@ -202,4 +210,51 @@ impl Display {
             ],
         );
     }
+}
+
+struct DisplayHardwareInterface {
+    spi: spi::Spi,
+    pin_dc: gpio::OutputPin,
+    pin_rst: gpio::OutputPin,
+    pin_busy: gpio::InputPin,
+}
+
+impl HardwareInterface for DisplayHardwareInterface {
+    fn set_level(&mut self, pin: GpioOutputPin, level: gpio::Level) {
+        match pin {
+            GpioOutputPin::Reset => &mut self.pin_rst,
+            GpioOutputPin::DataCommand => &mut self.pin_dc,
+        }
+        .write(level)
+    }
+
+    fn get_level(&self, pin: GpioInputPin) -> gpio::Level {
+        match pin {
+            GpioInputPin::Busy => &self.pin_busy,
+        }
+        .read()
+    }
+
+    fn write_to_spi(&mut self, buffer: &[u8]) -> Result<usize, spi::Error> {
+        self.spi.write(buffer)
+    }
+}
+
+trait HardwareInterface {
+    fn set_level(&mut self, pin: GpioOutputPin, level: gpio::Level);
+
+    fn get_level(&self, pin: GpioInputPin) -> gpio::Level;
+
+    fn write_to_spi(&mut self, data: &[u8]) -> Result<usize, spi::Error>;
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum GpioOutputPin {
+    Reset,
+    DataCommand,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum GpioInputPin {
+    Busy,
 }
