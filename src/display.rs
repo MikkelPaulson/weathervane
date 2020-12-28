@@ -2,6 +2,8 @@ use rppal::{gpio, spi};
 use std::thread;
 use std::time::Duration;
 
+use dither::ditherer::Dither;
+
 pub struct Display {
     hardware_interface: Box<dyn HardwareInterface>,
 }
@@ -39,6 +41,12 @@ impl Display {
                     .expect("Unable to acquire busy pin.")
                     .into_input(),
             }),
+        }
+    }
+
+    pub fn dummy() -> Self {
+        Self {
+            hardware_interface: Box::new(DummyHardwareInterface),
         }
     }
 
@@ -103,43 +111,94 @@ impl Display {
         let mut render_context = bitmap_target.render_context();
         f(&mut render_context);
 
-        let (channel1, channel2): (Vec<u8>, Vec<u8>) = bitmap_target
-            .to_image_buf(piet_common::ImageFormat::RgbaPremul)
-            .unwrap()
-            .raw_pixels()
-            .chunks(8 * 4) // 8 pixels @ RGBA
-            .map(|chunk: &[u8]| {
-                chunk
-                    .chunks_exact(4) // chunk by pixel (RGBA)
-                    .enumerate()
-                    .map(|(index, pixel)| {
-                        // map each value as 0.0..=1.0
-                        let (r, g, b, a) = (
-                            (pixel[0] as f64 / 255.),
-                            (pixel[1] as f64 / 255.),
-                            (pixel[2] as f64 / 255.),
-                            (pixel[3] as f64 / 255.),
-                        );
+        //let (channel1, channel2): (Vec<u8>, Vec<u8>) =
 
-                        let color = (((1. - a) * 3.) + (r + g + b) * a) as u8;
+        let (mut channel1, mut channel2): (Vec<u8>, Vec<u8>) = (
+            Vec::with_capacity(Self::DISPLAY_WIDTH * Self::DISPLAY_HEIGHT / 8),
+            Vec::with_capacity(Self::DISPLAY_WIDTH * Self::DISPLAY_HEIGHT / 8),
+        );
 
-                        let result = (
-                            if color & 0x01 == 0x01 {
-                                0x80 >> index
-                            } else {
-                                0
-                            },
-                            if color & 0x02 == 0x02 {
-                                0x80 >> index
-                            } else {
-                                0
-                            },
-                        );
-                        result
+        for (index, pixel) in dither::ditherer::FLOYD_STEINBERG
+            .dither(
+                dither::prelude::Img::new(
+                    bitmap_target
+                        .to_image_buf(piet_common::ImageFormat::RgbaPremul)
+                        .unwrap()
+                        .pixel_colors()
+                        .flatten()
+                        .map(|pixel: piet::Color| {
+                            // Map pixels to f64 in range 0.0..255.0
+                            let (r, g, b, a) = pixel.as_rgba();
+                            dither::color::RGB(r * 255., g * 255., b * 255.)
+                                .to_chroma_corrected_black_and_white()
+                                * a
+                                + (1. - a) * 255.
+                        }),
+                    Self::DISPLAY_WIDTH as u32,
+                )
+                .unwrap(),
+                dither::create_quantize_n_bits_func(3).unwrap(),
+            )
+            .iter()
+            .enumerate()
+        {
+            let byte_offset = (index % Self::DISPLAY_WIDTH % 8) as u8;
+            if byte_offset == 0 {
+                channel1.push(0);
+                channel2.push(0);
+            }
+
+            let pixel_int = (pixel / 255. * 3.) as u8;
+
+            if pixel_int & 0x01 == 0x01 {
+                channel1
+                    .last_mut()
+                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
+            }
+
+            if pixel_int & 0x02 == 0x02 {
+                channel2
+                    .last_mut()
+                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
+            }
+        }
+
+        /*
+                    .raw_pixels()
+                    .chunks(8 * 4) // 8 pixels @ RGBA
+                    .map(|chunk: &[u8]| {
+                        chunk
+                            .chunks_exact(4) // chunk by pixel (RGBA)
+                            .enumerate()
+                            .map(|(index, pixel)| {
+                                // map each value as 0.0..=1.0
+                                let (r, g, b, a) = (
+                                    (pixel[0] as f64 / 255.),
+                                    (pixel[1] as f64 / 255.),
+                                    (pixel[2] as f64 / 255.),
+                                    (pixel[3] as f64 / 255.),
+                                );
+
+                                let color = (((1. - a) * 3.) + (r + g + b) * a) as u8;
+
+                                let result = (
+                                    if color & 0x01 == 0x01 {
+                                        0x80 >> index
+                                    } else {
+                                        0
+                                    },
+                                    if color & 0x02 == 0x02 {
+                                        0x80 >> index
+                                    } else {
+                                        0
+                                    },
+                                );
+                                result
+                            })
+                            .fold((0, 0), |a, b| (a.0 | b.0, a.1 | b.1))
                     })
-                    .fold((0, 0), |a, b| (a.0 | b.0, a.1 | b.1))
-            })
-            .unzip();
+                    .unzip();
+        */
 
         self.draw(&channel1, &channel2).unwrap();
     }
@@ -365,6 +424,20 @@ impl HardwareInterface for DisplayHardwareInterface {
 
     fn write_to_spi(&mut self, buffer: &[u8]) -> Result<usize, spi::Error> {
         self.spi.write(buffer)
+    }
+}
+
+struct DummyHardwareInterface;
+
+impl HardwareInterface for DummyHardwareInterface {
+    fn set_level(&mut self, pin: GpioOutputPin, level: gpio::Level) {}
+
+    fn get_level(&self, pin: GpioInputPin) -> gpio::Level {
+        gpio::Level::Low
+    }
+
+    fn write_to_spi(&mut self, buffer: &[u8]) -> Result<usize, spi::Error> {
+        Ok(buffer.len())
     }
 }
 

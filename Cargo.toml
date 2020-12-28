@@ -10,6 +10,7 @@ edition = "2018"
 rppal = "0.11.3"
 resvg = "0.12.0"
 usvg = "0.12.0"
+dither = "1.3.9"
 piet-common = "0.3.0"
 piet-cairo = "0.3.0"
 

@@ -8,6 +8,7 @@ use weathervane::display::Display;
 
 fn main() {
     let mut display = Display::new();
+    //let mut display = Display::dummy();
     println!("display.init();");
     display.init().unwrap();
     display.clear().unwrap();
