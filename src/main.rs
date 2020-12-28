@@ -12,11 +12,11 @@ fn main() {
     //let mut display = Display::dummy();
     println!("display.init();");
     display.init().unwrap();
-    display.clear().unwrap();
+    //display.clear().unwrap();
 
     println!("Drawing mockup");
     draw_mockup(&mut display);
-    thread::sleep(Duration::from_secs(5));
+    //thread::sleep(Duration::from_secs(5));
 
     /*
     for i in 0..=14 {
@@ -49,7 +49,7 @@ fn draw_mockup(display: &mut Display) {
 
         ctx.draw_text(
             &temperature,
-            piet::kurbo::Rect::from_center_size((70., 70.), temperature.size()).origin(),
+            piet::kurbo::Rect::from_center_size((80., 80.), temperature.size()).origin(),
         );
 
         let weather_icon = usvg::Tree::from_str(
@@ -60,9 +60,9 @@ fn draw_mockup(display: &mut Display) {
 
         let weather_image = ctx
             .make_image(
-                140,
-                140,
-                &resvg::render(&weather_icon, usvg::FitTo::Width(140), None)
+                120,
+                120,
+                &resvg::render(&weather_icon, usvg::FitTo::Width(120), None)
                     .unwrap()
                     .data()[..],
                 piet::ImageFormat::RgbaPremul,
@@ -71,7 +71,7 @@ fn draw_mockup(display: &mut Display) {
 
         ctx.draw_image(
             &weather_image,
-            piet_common::kurbo::Rect::new(140., 0., 280., 140.),
+            piet_common::kurbo::Rect::new(145., 15., 265., 135.),
             piet::InterpolationMode::NearestNeighbor,
         );
     });
