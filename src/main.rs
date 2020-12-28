@@ -13,10 +13,19 @@ fn main() {
 
     println!("display.clear();");
     display.clear().unwrap();
-    println!("draw_sample();");
-    draw_sample(&mut display);
+    println!("draw_rust_logo();");
+    draw_sample(&mut display, 0);
     println!("sleeping");
     thread::sleep(Duration::from_secs(10));
+
+    /*
+    println!("display.clear();");
+    display.clear().unwrap();
+    println!("draw_rust_logo();");
+    draw_rust_logo(&mut display);
+    println!("sleeping");
+    thread::sleep(Duration::from_secs(10));
+    */
 
     println!("display.sleep();");
     display.init().unwrap();
@@ -24,7 +33,16 @@ fn main() {
     display.sleep().unwrap();
 }
 
-fn draw_sample(display: &mut Display) {
+fn draw_sample(display: &mut Display, sample_num: usize) {
+    display.render(|ctx: &mut piet_cairo::CairoRenderContext| {
+        piet::samples::get::<piet_cairo::CairoRenderContext>(sample_num)
+            .unwrap()
+            .draw(ctx)
+            .unwrap();
+    });
+}
+
+fn draw_rust_logo(display: &mut Display) {
     let rust_logo =
         usvg::Tree::from_str(&include_str!("rust.svg"), &usvg::Options::default()).unwrap();
 

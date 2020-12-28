@@ -94,6 +94,48 @@ impl Display {
         Ok(())
     }
 
+    pub fn render<F: FnOnce(&mut piet_cairo::CairoRenderContext)>(&mut self, f: F) {
+        let mut device = piet_common::Device::new().unwrap();
+        let mut bitmap_target = device
+            .bitmap_target(Self::DISPLAY_WIDTH, Self::DISPLAY_HEIGHT, 1.)
+            .unwrap();
+
+        let mut render_context = bitmap_target.render_context();
+        f(&mut render_context);
+
+        let (channel1, channel2): (Vec<u8>, Vec<u8>) = bitmap_target
+            .to_image_buf(piet_common::ImageFormat::RgbaPremul)
+            .unwrap()
+            .raw_pixels()
+            .chunks(8 * 4) // 8 pixels @ RGBA
+            .map(|chunk: &[u8]| {
+                chunk
+                    .chunks_exact(4) // chunk by pixel (RGBA)
+                    .enumerate()
+                    .map(|(index, pixel)| {
+                        // For now, we just render the alpha channel.
+                        let color = (pixel[3] as f64 / 255. * 3.).round() as u8;
+                        let result = (
+                            if color & 0x01 == 0x01 {
+                                0
+                            } else {
+                                0x80 >> index
+                            },
+                            if color & 0x02 == 0x02 {
+                                0
+                            } else {
+                                0x80 >> index
+                            },
+                        );
+                        result
+                    })
+                    .fold((0, 0), |a, b| (a.0 | b.0, a.1 | b.1))
+            })
+            .unzip();
+
+        self.draw(&channel1, &channel2).unwrap();
+    }
+
     pub fn draw(&mut self, register1: &[u8], register2: &[u8]) -> Result<(), &'static str> {
         self.run(Command::Unknown0x49)?;
 

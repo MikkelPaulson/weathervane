@@ -341,6 +341,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "os_info"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2127a5da3c69035537febc04cd07008bb643653303b213a49b036d944531207"
+dependencies = [
+ "log",
+ "winapi",
+]
+
+[[package]]
 name = "pico-args"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -353,6 +363,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35ef43d89a47d71e370e01f50384bf4efafacf84a22776d4dc1fae5f1ccd51e9"
 dependencies = [
  "kurbo",
+ "os_info",
+ "pico-args",
+ "png",
  "unic-bidi",
 ]
 
@@ -941,6 +954,7 @@ name = "weathervane"
 version = "0.1.0"
 dependencies = [
  "piet",
+ "piet-cairo",
  "piet-common",
  "resvg",
  "rppal",
