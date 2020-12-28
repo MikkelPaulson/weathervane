@@ -1,6 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
+use piet::RenderContext;
 use resvg;
 use usvg;
 
@@ -13,11 +14,17 @@ fn main() {
     display.init().unwrap();
     display.clear().unwrap();
 
+    println!("Drawing mockup");
+    draw_mockup(&mut display);
+    thread::sleep(Duration::from_secs(5));
+
+    /*
     for i in 0..=14 {
         println!("sample {}", i);
         draw_sample(&mut display, i);
-        thread::sleep(Duration::from_secs(15));
+        thread::sleep(Duration::from_secs(5));
     }
+    */
 
     /*
     println!("display.clear();");
@@ -29,9 +36,34 @@ fn main() {
     */
 
     println!("display.sleep();");
-    display.init().unwrap();
-    display.clear().unwrap();
     display.sleep().unwrap();
+}
+
+fn draw_mockup(display: &mut Display) {
+    display.render(|ctx: &mut piet_cairo::CairoRenderContext| {
+        let weather_icon = usvg::Tree::from_str(
+            &include_str!("../images/amcharts-icons/rainy-6.svg"),
+            &usvg::Options::default(),
+        )
+        .unwrap();
+
+        let weather_image = ctx
+            .make_image(
+                140,
+                140,
+                &resvg::render(&weather_icon, usvg::FitTo::Width(140), None)
+                    .unwrap()
+                    .data()[..],
+                piet::ImageFormat::RgbaPremul,
+            )
+            .unwrap();
+
+        ctx.draw_image(
+            &weather_image,
+            piet_common::kurbo::Rect::new(140., 0., 280., 140.),
+            piet::InterpolationMode::NearestNeighbor,
+        );
+    });
 }
 
 fn draw_sample(display: &mut Display, sample_num: usize) {

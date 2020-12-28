@@ -163,43 +163,6 @@ impl Display {
             }
         }
 
-        /*
-                    .raw_pixels()
-                    .chunks(8 * 4) // 8 pixels @ RGBA
-                    .map(|chunk: &[u8]| {
-                        chunk
-                            .chunks_exact(4) // chunk by pixel (RGBA)
-                            .enumerate()
-                            .map(|(index, pixel)| {
-                                // map each value as 0.0..=1.0
-                                let (r, g, b, a) = (
-                                    (pixel[0] as f64 / 255.),
-                                    (pixel[1] as f64 / 255.),
-                                    (pixel[2] as f64 / 255.),
-                                    (pixel[3] as f64 / 255.),
-                                );
-
-                                let color = (((1. - a) * 3.) + (r + g + b) * a) as u8;
-
-                                let result = (
-                                    if color & 0x01 == 0x01 {
-                                        0x80 >> index
-                                    } else {
-                                        0
-                                    },
-                                    if color & 0x02 == 0x02 {
-                                        0x80 >> index
-                                    } else {
-                                        0
-                                    },
-                                );
-                                result
-                            })
-                            .fold((0, 0), |a, b| (a.0 | b.0, a.1 | b.1))
-                    })
-                    .unzip();
-        */
-
         self.draw(&channel1, &channel2).unwrap();
     }
 
@@ -430,9 +393,9 @@ impl HardwareInterface for DisplayHardwareInterface {
 struct DummyHardwareInterface;
 
 impl HardwareInterface for DummyHardwareInterface {
-    fn set_level(&mut self, pin: GpioOutputPin, level: gpio::Level) {}
+    fn set_level(&mut self, _pin: GpioOutputPin, _level: gpio::Level) {}
 
-    fn get_level(&self, pin: GpioInputPin) -> gpio::Level {
+    fn get_level(&self, _pin: GpioInputPin) -> gpio::Level {
         gpio::Level::Low
     }
 
