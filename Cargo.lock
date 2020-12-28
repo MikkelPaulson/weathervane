@@ -1306,6 +1306,7 @@ name = "weathervane"
 version = "0.1.0"
 dependencies = [
  "dither",
+ "gif",
  "piet",
  "piet-cairo",
  "piet-common",

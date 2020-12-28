@@ -1,0 +1,11 @@
+--2020-12-28 16:50:39--  https://weather.gc.ca/data/radar/detailed/temp_image//CASBV/CASBV_PRECIP_SNOW_2020_12_28_18_42.GIF
+Resolving weather.gc.ca (weather.gc.ca)... 205.189.10.43, 205.189.10.44
+Connecting to weather.gc.ca (weather.gc.ca)|205.189.10.43|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 26537 (26K) [image/gif]
+Saving to: ‘CASBV_PRECIP_SNOW_2020_12_28_18_42.GIF’
+
+     0K .......... .......... .....                           100%  568K=0.05s
+
+2020-12-28 16:50:39 (568 KB/s) - ‘CASBV_PRECIP_SNOW_2020_12_28_18_42.GIF’ saved [26537/26537]
+

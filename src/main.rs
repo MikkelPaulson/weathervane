@@ -1,6 +1,7 @@
-use std::thread;
-use std::time::Duration;
+//use std::thread;
+//use std::time::Duration;
 
+use piet::kurbo;
 use piet::{RenderContext, Text, TextLayout, TextLayoutBuilder};
 use resvg;
 use usvg;
@@ -46,44 +47,64 @@ fn draw_mockup(display: &mut Display) {
             .default_attribute(piet::TextAttribute::FontSize(60.))
             .build()
             .unwrap();
-
         ctx.draw_text(
             &temp_current,
-            piet::kurbo::Rect::from_center_size((80., 60.), temp_current.size()).origin(),
+            kurbo::Rect::from_center_size((80., 60.), temp_current.size()).origin(),
         );
 
         let temp_high_low = piet_cairo::CairoText::new()
-            .new_text_layout("▲ -19° / -25° ▼")
-            .default_attribute(piet::TextAttribute::FontSize(15.))
+            .new_text_layout("-19° / -25°")
+            .default_attribute(piet::TextAttribute::FontSize(20.))
             .build()
             .unwrap();
-
         ctx.draw_text(
             &temp_high_low,
-            piet::kurbo::Rect::from_center_size((80., 100.), temp_high_low.size()).origin(),
+            kurbo::Rect::from_center_size((80., 110.), temp_high_low.size()).origin(),
         );
 
-        let weather_icon = usvg::Tree::from_str(
-            &include_str!("../images/weather/024-snowy.svg"),
-            &usvg::Options::default(),
-        )
-        .unwrap();
-
-        let weather_image = ctx
+        let weather_icon = ctx
             .make_image(
                 120,
                 120,
-                &resvg::render(&weather_icon, usvg::FitTo::Width(120), None)
-                    .unwrap()
-                    .data()[..],
+                &resvg::render(
+                    &usvg::Tree::from_str(
+                        &include_str!("../images/weather/024-snowy.svg"),
+                        &usvg::Options::default(),
+                    )
+                    .unwrap(),
+                    usvg::FitTo::Width(120),
+                    None,
+                )
+                .unwrap()
+                .data()[..],
                 piet::ImageFormat::RgbaPremul,
             )
             .unwrap();
-
         ctx.draw_image(
-            &weather_image,
-            piet_common::kurbo::Rect::new(145., 15., 265., 135.),
+            &weather_icon,
+            kurbo::Rect::from_origin_size((145., 15.), (120., 120.)),
             piet::InterpolationMode::NearestNeighbor,
+        );
+
+        let mut decoder =
+            gif::Decoder::new(&include_bytes!("../images/radar-test.gif")[..]).unwrap();
+        let frame = decoder.read_next_frame().unwrap().unwrap();
+        let radar_map = ctx
+            .make_image(
+                frame.width as usize,
+                frame.height as usize,
+                &frame.buffer,
+                piet::ImageFormat::RgbaPremul,
+            )
+            .unwrap();
+        ctx.draw_image_area(
+            &radar_map,
+            kurbo::Rect::from_origin_size(
+                kurbo::Point::ZERO,
+                (frame.height as f64, frame.height as f64),
+            ),
+            kurbo::Rect::from_origin_size((10., 210.), (260., 260.)),
+            piet::InterpolationMode::Bilinear,
         );
     });
 }
