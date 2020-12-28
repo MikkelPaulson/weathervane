@@ -93,7 +93,12 @@ fn draw_mockup(display: &mut Display) {
             .make_image(
                 frame.width as usize,
                 frame.height as usize,
-                &frame.buffer,
+                &frame
+                    .buffer
+                    .chunks_exact(3)
+                    .flat_map(|chunk| chunk.iter().chain([0xFF].iter()))
+                    .cloned()
+                    .collect::<Vec<u8>>()[..],
                 piet::ImageFormat::RgbaPremul,
             )
             .unwrap();
