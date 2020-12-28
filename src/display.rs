@@ -125,14 +125,14 @@ impl Display {
 
                         let result = (
                             if color & 0x01 == 0x01 {
-                                0
-                            } else {
                                 0x80 >> index
+                            } else {
+                                0
                             },
                             if color & 0x02 == 0x02 {
-                                0
-                            } else {
                                 0x80 >> index
+                            } else {
+                                0
                             },
                         );
                         result

@@ -15,7 +15,7 @@ fn main() {
     for i in 0..=14 {
         println!("sample {}", i);
         draw_sample(&mut display, i);
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(15));
     }
 
     /*
