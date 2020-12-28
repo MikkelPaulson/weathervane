@@ -9,26 +9,26 @@ use weathervane::display::Display;
 fn main() {
     let mut display = Display::new();
     println!("display.init();");
-    display.init();
+    display.init().unwrap();
 
     println!("display.clear();");
-    display.clear();
+    display.clear().unwrap();
     println!("display.checkerboard();");
-    display.checkerboard();
+    display.checkerboard().unwrap();
     println!("sleeping");
     thread::sleep(Duration::from_secs(10));
 
     println!("display.clear();");
-    display.clear();
+    display.clear().unwrap();
     println!("draw_sample();");
     draw_sample(&mut display);
     println!("sleeping");
     thread::sleep(Duration::from_secs(10));
 
     println!("display.sleep();");
-    display.init();
-    display.clear();
-    display.sleep();
+    display.init().unwrap();
+    display.clear().unwrap();
+    display.sleep().unwrap();
 }
 
 fn draw_sample(display: &mut Display) {
@@ -80,7 +80,7 @@ fn draw_sample(display: &mut Display) {
         })
         .unzip();
 
-    display.draw(&channel1, &channel2);
+    display.draw(&channel1, &channel2).unwrap();
 }
 /*
 fn draw_sample(display: &mut Display) {

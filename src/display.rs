@@ -54,126 +54,78 @@ impl Display {
         thread::sleep(Duration::from_millis(30));
     }
 
-    pub fn wait_for_busy(&mut self) {
-        if self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High {
-            print!("Waiting for device...");
-            while self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High {
-                thread::sleep(Duration::from_millis(200));
-            }
-            println!("Done");
-        }
-    }
-
-    pub fn send(&mut self, command: u8, data: &[u8]) {
-        self.send_command(command);
-        if !data.is_empty() {
-            self.send_data(data);
-        }
-    }
-
-    pub fn send_command(&mut self, command: u8) {
-        self.hardware_interface
-            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
-        self.hardware_interface
-            .write_to_spi(&[command])
-            .expect("Unable to write command.");
-    }
-
-    pub fn send_data(&mut self, data: &[u8]) {
-        self.hardware_interface
-            .set_level(GpioOutputPin::DataCommand, gpio::Level::High);
-        for chunk in data[..].chunks(4096) {
-            self.hardware_interface
-                .write_to_spi(&chunk)
-                .expect("Unable to write data.");
-        }
-    }
-
-    pub fn init(&mut self) {
+    pub fn init(&mut self) -> Result<(), &'static str> {
         self.reset();
 
-        self.send(0x12, &[]);
+        self.run(Command::Unknown0x12)?;
         thread::sleep(Duration::from_millis(300));
 
-        self.send(0x46, &[0xF7]);
-        self.wait_for_busy();
-        self.send(0x47, &[0xF7]);
-        self.wait_for_busy();
+        self.run(Command::Unknown0x46)?;
+        self.run(Command::Unknown0x47)?;
 
-        // setting gate number
-        self.send(0x01, &[0xDF, 0x01, 0x00]);
+        self.run(Command::SetGateNumber)?;
 
-        // set gate voltage
-        self.send(0x03, &[0x00]);
+        self.run(Command::SetGateVoltage)?;
 
-        // set source voltage
-        self.send(0x04, &[0x41, 0xA8, 0x32]);
+        self.run(Command::SetSourceVoltage)?;
 
-        // set data entry sequence
-        self.send(0x11, &[0x03]);
+        self.run(Command::SetDataEntrySequence)?;
+        self.run(Command::SetBorder)?;
+        self.run(Command::SetBoosterStrength)?;
+        self.run(Command::SetInternalSensorOn)?;
+        self.run(Command::SetVComValue)?;
+        self.run(Command::SetDisplayOption(&[
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ]))?;
 
-        // set border
-        self.send(0x3C, &[0x00]);
+        self.run(Command::SetXRamPosition(&[0x00, 0x00, 0x17, 0x01]))?;
+        self.run(Command::SetYRamPosition(&[0x00, 0x00, 0xDF, 0x01]))?;
 
-        // set booster strength
-        self.send(0x0C, &[0xAE, 0xC7, 0xC3, 0xC0, 0xC0]);
+        self.run(Command::UpdateSequence(&[0xCF]))?;
 
-        // set internal sensor on
-        self.send(0x18, &[0x80]);
-
-        // set vcom value
-        self.send(0x2C, &[0x44]);
-
-        // set display option, these setting turn on previous function
-        self.send(
-            0x37,
-            &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-        );
-
-        // setting X direction start/end position of RAM
-        self.send(0x44, &[0x00, 0x00, 0x17, 0x01]);
-
-        // setting Y direction start/end position of RAM
-        self.send(0x45, &[0x00, 0x00, 0xDF, 0x01]);
-
-        // Display Update Control 2
-        self.send(0x22, &[0xCF]);
+        Ok(())
     }
 
-    pub fn clear(&mut self) {
-        self.send(0x49, &[0x00]);
-
+    pub fn clear(&mut self) -> Result<(), &'static str> {
         self.draw(
             &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
             &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
-        );
+        )
     }
 
-    pub fn sleep(&mut self) {
-        self.send(0x50, &[0xF7]);
-        self.send(0x02, &[]);
-        self.send(0x07, &[0xA5]);
+    pub fn sleep(&mut self) -> Result<(), &'static str> {
+        self.run(Command::Unknown0x50)?;
+        self.run(Command::PowerOff)?;
+        self.run(Command::Sleep)?;
 
         self.hardware_interface
             .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
         self.hardware_interface
             .set_level(GpioOutputPin::Reset, gpio::Level::Low);
+
+        Ok(())
     }
 
-    pub fn draw(&mut self, register1: &[u8], register2: &[u8]) {
-        self.send(0x4E, &[0x00, 0x00]);
-        self.send(0x4F, &[0x00, 0x00]);
+    pub fn draw(&mut self, register1: &[u8], register2: &[u8]) -> Result<(), &'static str> {
+        self.run(Command::Unknown0x49)?;
 
-        self.send(0x24, &register1);
-        self.send(0x26, &register2);
+        self.run(Command::Unknown0x4E)?;
+        self.run(Command::Unknown0x4F)?;
+        self.run(Command::WriteRegister1(&register1))?;
 
-        self.load_look_up_table();
-        self.send(0x22, &[0xC7]);
-        self.send(0x20, &[]);
-        self.wait_for_busy();
+        self.run(Command::Unknown0x4E)?;
+        self.run(Command::Unknown0x4F)?;
+        self.run(Command::WriteRegister2(&register2))?;
+
+        self.load_look_up_table()?;
+
+        self.run(Command::UpdateSequence(&[0xCF]))?;
+        self.run(Command::Display)?;
+
+        Ok(())
     }
 
-    pub fn checkerboard(&mut self) {
+    pub fn checkerboard(&mut self) -> Result<(), &'static str> {
         let mut register = Vec::with_capacity(Self::DISPLAY_HEIGHT * Self::DISPLAY_WIDTH / 8);
 
         for y in 0..Self::DISPLAY_HEIGHT {
@@ -188,26 +140,55 @@ impl Display {
             );
         }
 
-        self.draw(&register[..], &register[..]);
+        self.draw(&register[..], &register[..])
     }
 
-    fn load_look_up_table(&mut self) {
-        self.send(
-            0x32,
-            &[
-                0x2A, 0x06, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //1
-                0x28, 0x06, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //2
-                0x20, 0x06, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //3
-                0x14, 0x06, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //4
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //5
-                0x00, 0x02, 0x02, 0x0A, 0x00, 0x00, 0x00, 0x08, 0x08, 0x02, //6
-                0x00, 0x02, 0x02, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //7
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //9
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //10
-                0x22, 0x22, 0x22, 0x22, 0x22,
-            ],
-        );
+    fn load_look_up_table(&mut self) -> Result<(), &'static str> {
+        self.run(Command::WriteLookUpTableRegister(&[
+            0x2A, 0x06, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //1
+            0x28, 0x06, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //2
+            0x20, 0x06, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //3
+            0x14, 0x06, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //4
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //5
+            0x00, 0x02, 0x02, 0x0A, 0x00, 0x00, 0x00, 0x08, 0x08, 0x02, //6
+            0x00, 0x02, 0x02, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //7
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //9
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //10
+            0x22, 0x22, 0x22, 0x22, 0x22,
+        ]))
+    }
+
+    fn run(&mut self, command: Command) -> Result<(), &'static str> {
+        let (command_byte, data_bytes) = command.get_bytes();
+
+        self.hardware_interface
+            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
+        self.hardware_interface
+            .write_to_spi(&[command_byte])
+            .map_err(|_| "Unable to write command.")?;
+
+        if !data_bytes.is_empty() {
+            self.hardware_interface
+                .set_level(GpioOutputPin::DataCommand, gpio::Level::High);
+            for chunk in data_bytes[..].chunks(4096) {
+                self.hardware_interface
+                    .write_to_spi(&chunk)
+                    .map_err(|_| "Unable to write data.")?;
+            }
+        }
+
+        if command.is_blocking()
+            && self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High
+        {
+            print!("Waiting for device...");
+            while self.hardware_interface.get_level(GpioInputPin::Busy) == gpio::Level::High {
+                thread::sleep(Duration::from_millis(200));
+            }
+            println!("Done");
+        }
+
+        Ok(())
     }
 }
 
@@ -242,11 +223,8 @@ enum Command<'a> {
     /// 0x20 "Master Activation" in documentation (activate display update sequence)
     Display,
 
-    /// 0x21 "Display Update Control 1" in documentation
-    SetRegisterMode,
-
     /// 0x22 "Display Update Control 2" in documentation
-    UpdateSequence,
+    UpdateSequence(&'a [u8]),
 
     /// 0x24 Write RAM (register 1)
     WriteRegister1(&'a [u8]),
@@ -289,6 +267,45 @@ enum Command<'a> {
 
     /// 0x50 Not documented
     Unknown0x50,
+}
+
+impl<'a> Command<'a> {
+    fn get_bytes(&self) -> (u8, &[u8]) {
+        match self {
+            Self::SetGateNumber => (0x01, &[0xDF, 0x01, 0x00]),
+            Self::PowerOff => (0x02, &[]),
+            Self::SetGateVoltage => (0x03, &[0x00]),
+            Self::SetSourceVoltage => (0x04, &[0x41, 0xA8, 0x32]),
+            Self::Sleep => (0x07, &[0xA5]),
+            Self::SetBoosterStrength => (0x0C, &[0xAE, 0xC7, 0xC3, 0xC0, 0xC0]),
+            Self::SetDataEntrySequence => (0x11, &[0x03]),
+            Self::Unknown0x12 => (0x12, &[]),
+            Self::SetInternalSensorOn => (0x18, &[0x80]),
+            Self::Display => (0x20, &[]),
+            Self::UpdateSequence(data) => (0x22, data),
+            Self::WriteRegister1(data) => (0x24, data),
+            Self::WriteRegister2(data) => (0x26, data),
+            Self::SetVComValue => (0x2C, &[0x44]),
+            Self::WriteLookUpTableRegister(data) => (0x32, data),
+            Self::SetDisplayOption(data) => (0x37, data),
+            Self::SetBorder => (0x3C, &[0x00]),
+            Self::SetXRamPosition(data) => (0x44, &data[..]),
+            Self::SetYRamPosition(data) => (0x45, &data[..]),
+            Self::Unknown0x46 => (0x46, &[0xF7]),
+            Self::Unknown0x47 => (0x47, &[0xF7]),
+            Self::Unknown0x49 => (0x49, &[0x00]),
+            Self::Unknown0x4E => (0x4E, &[0x00, 0x00]),
+            Self::Unknown0x4F => (0x4F, &[0x00, 0x00]),
+            Self::Unknown0x50 => (0x50, &[0xF7]),
+        }
+    }
+
+    fn is_blocking(&self) -> bool {
+        match self {
+            Self::Unknown0x46 | Self::Unknown0x47 | Self::Display => true,
+            _ => false,
+        }
+    }
 }
 
 struct DisplayHardwareInterface {
