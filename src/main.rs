@@ -88,6 +88,8 @@ fn draw_mockup(display: &mut Display) {
 
         let mut decoder =
             gif::Decoder::new(&include_bytes!("../images/radar-test.gif")[..]).unwrap();
+        let palette = decoder.palette().unwrap().to_vec();
+
         let frame = decoder.read_next_frame().unwrap().unwrap();
         let radar_map = ctx
             .make_image(
@@ -95,9 +97,15 @@ fn draw_mockup(display: &mut Display) {
                 frame.height as usize,
                 &frame
                     .buffer
-                    .chunks_exact(3)
-                    .flat_map(|chunk| chunk.iter().chain([0xFF].iter()))
-                    .cloned()
+                    .iter()
+                    .flat_map(|color: &u8| {
+                        vec![
+                            palette[*color as usize * 3],
+                            palette[*color as usize * 3 + 1],
+                            palette[*color as usize * 3 + 2],
+                            0xFF,
+                        ]
+                    })
                     .collect::<Vec<u8>>()[..],
                 piet::ImageFormat::RgbaPremul,
             )
