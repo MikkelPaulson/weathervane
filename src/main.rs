@@ -41,15 +41,26 @@ fn main() {
 
 fn draw_mockup(display: &mut Display) {
     display.render(|ctx: &mut piet_cairo::CairoRenderContext| {
-        let temperature = piet_cairo::CairoText::new()
+        let temp_current = piet_cairo::CairoText::new()
             .new_text_layout("-23°")
             .default_attribute(piet::TextAttribute::FontSize(60.))
             .build()
             .unwrap();
 
         ctx.draw_text(
-            &temperature,
-            piet::kurbo::Rect::from_center_size((80., 80.), temperature.size()).origin(),
+            &temp_current,
+            piet::kurbo::Rect::from_center_size((80., 60.), temp_current.size()).origin(),
+        );
+
+        let temp_high_low = piet_cairo::CairoText::new()
+            .new_text_layout("▲ -19° / -25° ▼")
+            .default_attribute(piet::TextAttribute::FontSize(15.))
+            .build()
+            .unwrap();
+
+        ctx.draw_text(
+            &temp_high_low,
+            piet::kurbo::Rect::from_center_size((80., 100.), temp_high_low.size()).origin(),
         );
 
         let weather_icon = usvg::Tree::from_str(
