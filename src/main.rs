@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
-use piet::{RenderContext, Text, TextLayoutBuilder};
+use piet::{RenderContext, Text, TextLayout, TextLayoutBuilder};
 use resvg;
 use usvg;
 
@@ -42,12 +42,15 @@ fn main() {
 fn draw_mockup(display: &mut Display) {
     display.render(|ctx: &mut piet_cairo::CairoRenderContext| {
         let temperature = piet_cairo::CairoText::new()
-            .new_text_layout("23°")
-            .max_width(140.)
+            .new_text_layout("-23°")
+            .default_attribute(piet::TextAttribute::FontSize(60.))
             .build()
             .unwrap();
 
-        ctx.draw_text(&temperature, (0., 0.));
+        ctx.draw_text(
+            &temperature,
+            piet::kurbo::Rect::from_center_size((70., 70.), temperature.size()).origin(),
+        );
 
         let weather_icon = usvg::Tree::from_str(
             &include_str!("../images/weather/024-snowy.svg"),
