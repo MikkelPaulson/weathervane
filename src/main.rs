@@ -44,8 +44,11 @@ fn draw_sample(display: &mut Display, sample_num: usize) {
 }
 
 fn draw_rust_logo(display: &mut Display) {
-    let rust_logo =
-        usvg::Tree::from_str(&include_str!("rust.svg"), &usvg::Options::default()).unwrap();
+    let rust_logo = usvg::Tree::from_str(
+        &include_str!("../images/rust.svg"),
+        &usvg::Options::default(),
+    )
+    .unwrap();
 
     let image_size = rust_logo.svg_node().size;
     let display_size = usvg::ScreenSize::new(
