@@ -15,4 +15,5 @@ piet-common = "0.3.0"
 piet-cairo = "0.3.0"
 
 [dependencies.piet]
+version = "0.3.0"
 features = ["samples"]

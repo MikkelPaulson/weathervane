@@ -42,7 +42,7 @@ fn main() {
 fn draw_mockup(display: &mut Display) {
     display.render(|ctx: &mut piet_cairo::CairoRenderContext| {
         let weather_icon = usvg::Tree::from_str(
-            &include_str!("../images/amcharts-icons/rainy-6.svg"),
+            &include_str!("../images/weather/013-snowing-1.svg"),
             &usvg::Options::default(),
         )
         .unwrap();
