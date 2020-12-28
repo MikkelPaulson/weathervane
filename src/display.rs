@@ -42,18 +42,6 @@ impl Display {
         }
     }
 
-    pub fn reset(&mut self) {
-        self.hardware_interface
-            .set_level(GpioOutputPin::Reset, gpio::Level::High);
-        thread::sleep(Duration::from_millis(30));
-        self.hardware_interface
-            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
-        thread::sleep(Duration::from_millis(3));
-        self.hardware_interface
-            .set_level(GpioOutputPin::Reset, gpio::Level::High);
-        thread::sleep(Duration::from_millis(30));
-    }
-
     pub fn init(&mut self) -> Result<(), &'static str> {
         self.reset();
 
@@ -125,22 +113,16 @@ impl Display {
         Ok(())
     }
 
-    pub fn checkerboard(&mut self) -> Result<(), &'static str> {
-        let mut register = Vec::with_capacity(Self::DISPLAY_HEIGHT * Self::DISPLAY_WIDTH / 8);
-
-        for y in 0..Self::DISPLAY_HEIGHT {
-            let sequence = if y / 8 % 2 == 0 {
-                [0xFF, 0x00]
-            } else {
-                [0x00, 0xFF]
-            };
-
-            register.extend_from_slice(
-                &sequence.repeat(Self::DISPLAY_WIDTH / 16 + 1)[0..Self::DISPLAY_WIDTH / 8],
-            );
-        }
-
-        self.draw(&register[..], &register[..])
+    fn reset(&mut self) {
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::High);
+        thread::sleep(Duration::from_millis(30));
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
+        thread::sleep(Duration::from_millis(3));
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::High);
+        thread::sleep(Duration::from_millis(30));
     }
 
     fn load_look_up_table(&mut self) -> Result<(), &'static str> {
