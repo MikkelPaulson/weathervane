@@ -113,8 +113,16 @@ impl Display {
                     .chunks_exact(4) // chunk by pixel (RGBA)
                     .enumerate()
                     .map(|(index, pixel)| {
-                        // For now, we just render the alpha channel.
-                        let color = (pixel[3] as f64 / 255. * 3.).round() as u8;
+                        // map each value as 0.0..=1.0
+                        let (r, g, b, a) = (
+                            (pixel[0] as f64 / 255.),
+                            (pixel[1] as f64 / 255.),
+                            (pixel[2] as f64 / 255.),
+                            (pixel[3] as f64 / 255.),
+                        );
+
+                        let color = (((1. - a) * 3.) + (r + g + b) * a) as u8;
+
                         let result = (
                             if color & 0x01 == 0x01 {
                                 0

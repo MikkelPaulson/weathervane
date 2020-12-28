@@ -10,13 +10,13 @@ fn main() {
     let mut display = Display::new();
     println!("display.init();");
     display.init().unwrap();
-
-    println!("display.clear();");
     display.clear().unwrap();
-    println!("draw_rust_logo();");
-    draw_sample(&mut display, 0);
-    println!("sleeping");
-    thread::sleep(Duration::from_secs(10));
+
+    for i in 0..=14 {
+        println!("sample {}", i);
+        draw_sample(&mut display, i);
+        thread::sleep(Duration::from_secs(5));
+    }
 
     /*
     println!("display.clear();");
