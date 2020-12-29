@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::iter;
 //use std::thread;
 //use std::time::Duration;
 
@@ -88,6 +89,41 @@ fn draw_mockup(display: &mut Display) {
         );
 
         let mut decoder =
+            gif::Decoder::new(&include_bytes!("../images/radar-rivers.gif")[..]).unwrap();
+        let (palette, frame, frame_width, frame_height) = {
+            let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
+            let frame = decoder.read_next_frame().unwrap().unwrap();
+
+            (palette, frame, frame.width as usize, frame.height as usize)
+        };
+
+        let radar_map = ctx
+            .make_image(
+                frame_width,
+                frame_height,
+                &frame
+                    .buffer
+                    .iter()
+                    .flat_map(|color: &u8| {
+                        iter::repeat(0x00).take(3).chain(
+                            iter::once(palette.get(*color as usize).unwrap_or(&0x00)).copied(),
+                        )
+                    })
+                    .collect::<Vec<u8>>()[..],
+                piet::ImageFormat::RgbaPremul,
+            )
+            .unwrap();
+        ctx.draw_image_area(
+            &radar_map,
+            kurbo::Rect::from_center_size(
+                (frame_height as f64 / 2., frame_height as f64 / 2.),
+                (280., 280.),
+            ),
+            kurbo::Rect::from_origin_size(kurbo::Point::ORIGIN, (280., 280.)),
+            piet::InterpolationMode::Bilinear,
+        );
+
+        let mut decoder =
             gif::Decoder::new(&include_bytes!("../images/radar-test.gif")[..]).unwrap();
         let (palette, frame, frame_width, frame_height) = {
             let frame = decoder.read_next_frame().unwrap().unwrap();
@@ -106,17 +142,14 @@ fn draw_mockup(display: &mut Display) {
                 });
 
             let mut palette: HashMap<u8, u8> = HashMap::new();
-            for i in (0x00..0xff).step_by(0x55).rev() {
-                // 0xaa, 0x55, 0x00
-                if let Some(index) = scale.pop() {
-                    palette.insert(index, i + 0x2a);
-                }
+            for i in (0x11..0xFF).step_by(0x44) {
+                // 0x11, 0x55, 0x99, 0xcc
                 if let Some(index) = scale.pop() {
                     palette.insert(index, i);
                 }
             }
             while let Some(index) = scale.pop() {
-                palette.insert(index, 0x00);
+                palette.insert(index, 0xFF);
             }
 
             (palette, frame, frame.width as usize, frame.height as usize)
@@ -130,7 +163,9 @@ fn draw_mockup(display: &mut Display) {
                     .buffer
                     .iter()
                     .flat_map(|color: &u8| {
-                        vec![palette[color], palette[color], palette[color], 0xFF]
+                        iter::repeat(0x00)
+                            .take(3)
+                            .chain(iter::once(palette.get(color).unwrap_or(&0x00)).copied())
                     })
                     .collect::<Vec<u8>>()[..],
                 piet::ImageFormat::RgbaPremul,
