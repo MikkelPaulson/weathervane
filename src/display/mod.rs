@@ -1,6 +1,7 @@
 use std::fmt;
 
 use dither::ditherer::Dither;
+use piet::RenderContext;
 
 pub mod waveshare;
 
@@ -75,6 +76,7 @@ pub trait Display {
             .unwrap();
 
         let mut render_context = bitmap_target.render_context();
+        render_context.clear(piet::Color::WHITE);
         f(&mut render_context);
 
         self.draw_dithered(
