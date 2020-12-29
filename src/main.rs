@@ -49,7 +49,7 @@ fn draw_mockup(display: &mut Display) {
             .unwrap();
         ctx.draw_text(
             &temp_current,
-            kurbo::Rect::from_center_size((80., 60.), temp_current.size()).origin(),
+            kurbo::Rect::from_center_size((80., 340.), temp_current.size()).origin(),
         );
 
         let temp_high_low = piet_cairo::CairoText::new()
@@ -59,7 +59,7 @@ fn draw_mockup(display: &mut Display) {
             .unwrap();
         ctx.draw_text(
             &temp_high_low,
-            kurbo::Rect::from_center_size((80., 110.), temp_high_low.size()).origin(),
+            kurbo::Rect::from_center_size((80., 390.), temp_high_low.size()).origin(),
         );
 
         let weather_icon = ctx
@@ -82,12 +82,12 @@ fn draw_mockup(display: &mut Display) {
             .unwrap();
         ctx.draw_image(
             &weather_icon,
-            kurbo::Rect::from_origin_size((145., 15.), (120., 120.)),
+            kurbo::Rect::from_origin_size((145., 295.), (120., 120.)),
             piet::InterpolationMode::NearestNeighbor,
         );
 
         let mut decoder =
-            gif::Decoder::new(&include_bytes!("../images/radar-test.gif")[..]).unwrap();
+            gif::Decoder::new(&include_bytes!("../images/radar-test2.gif")[..]).unwrap();
         let palette = decoder.palette().unwrap().to_vec();
 
         let frame = decoder.read_next_frame().unwrap().unwrap();
@@ -112,11 +112,11 @@ fn draw_mockup(display: &mut Display) {
             .unwrap();
         ctx.draw_image_area(
             &radar_map,
-            kurbo::Rect::from_origin_size(
-                kurbo::Point::ZERO,
-                (frame.height as f64, frame.height as f64),
+            kurbo::Rect::from_center_size(
+                (frame.height as f64 / 2., frame.height as f64 / 2.),
+                (280., 280.),
             ),
-            kurbo::Rect::from_origin_size((10., 210.), (260., 260.)),
+            kurbo::Rect::from_origin_size(kurbo::Point::ORIGIN, (280., 280.)),
             piet::InterpolationMode::Bilinear,
         );
     });
