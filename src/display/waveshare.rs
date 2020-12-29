@@ -2,13 +2,13 @@ use rppal::{gpio, spi};
 use std::thread;
 use std::time::Duration;
 
-use dither::ditherer::Dither;
+use super::Display;
 
-pub struct Display {
+pub struct EPaper3_7in {
     hardware_interface: Box<dyn HardwareInterface>,
 }
 
-impl Display {
+impl EPaper3_7in {
     const PIN_DC: u8 = 25; // Data/command pin (high = data, low = command)
     const PIN_RST: u8 = 17; // External reset pin (low = reset)
     const PIN_BUSY: u8 = 24; // Busy output pin (low = busy)
@@ -50,139 +50,11 @@ impl Display {
         }
     }
 
-    pub fn init(&mut self) -> Result<(), &'static str> {
-        self.reset();
-
-        self.run(Command::Unknown0x12)?;
-        thread::sleep(Duration::from_millis(300));
-
-        self.run(Command::Unknown0x46)?;
-        self.run(Command::Unknown0x47)?;
-
-        self.run(Command::SetGateNumber)?;
-
-        self.run(Command::SetGateVoltage)?;
-
-        self.run(Command::SetSourceVoltage)?;
-
-        self.run(Command::SetDataEntrySequence)?;
-        self.run(Command::SetBorder)?;
-        self.run(Command::SetBoosterStrength)?;
-        self.run(Command::SetInternalSensorOn)?;
-        self.run(Command::SetVComValue)?;
-        self.run(Command::SetDisplayOption(&[
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]))?;
-
-        self.run(Command::SetXRamPosition(&[0x00, 0x00, 0x17, 0x01]))?;
-        self.run(Command::SetYRamPosition(&[0x00, 0x00, 0xDF, 0x01]))?;
-
-        self.run(Command::UpdateSequence(&[0xCF]))?;
-
-        Ok(())
-    }
-
     pub fn clear(&mut self) -> Result<(), &'static str> {
-        self.draw(
+        self.draw_raw(
             &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
             &[0xFF].repeat(Self::DISPLAY_WIDTH / 8 * Self::DISPLAY_HEIGHT),
         )
-    }
-
-    pub fn sleep(&mut self) -> Result<(), &'static str> {
-        self.run(Command::Unknown0x50)?;
-        self.run(Command::PowerOff)?;
-        self.run(Command::Sleep)?;
-
-        self.hardware_interface
-            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
-        self.hardware_interface
-            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
-
-        Ok(())
-    }
-
-    pub fn render<F: FnOnce(&mut piet_cairo::CairoRenderContext)>(&mut self, f: F) {
-        let mut device = piet_common::Device::new().unwrap();
-        let mut bitmap_target = device
-            .bitmap_target(Self::DISPLAY_WIDTH, Self::DISPLAY_HEIGHT, 1.)
-            .unwrap();
-
-        let mut render_context = bitmap_target.render_context();
-        f(&mut render_context);
-
-        //let (channel1, channel2): (Vec<u8>, Vec<u8>) =
-
-        let (mut channel1, mut channel2): (Vec<u8>, Vec<u8>) = (
-            Vec::with_capacity(Self::DISPLAY_WIDTH * Self::DISPLAY_HEIGHT / 8),
-            Vec::with_capacity(Self::DISPLAY_WIDTH * Self::DISPLAY_HEIGHT / 8),
-        );
-
-        for (index, pixel) in dither::ditherer::FLOYD_STEINBERG
-            .dither(
-                dither::prelude::Img::new(
-                    bitmap_target
-                        .to_image_buf(piet_common::ImageFormat::RgbaPremul)
-                        .unwrap()
-                        .pixel_colors()
-                        .flatten()
-                        .map(|pixel: piet::Color| {
-                            // Map pixels to f64 in range 0.0..255.0
-                            let (r, g, b, a) = pixel.as_rgba();
-                            dither::color::RGB(r * 255., g * 255., b * 255.)
-                                .to_chroma_corrected_black_and_white()
-                                * a
-                                + (1. - a) * 255.
-                        }),
-                    Self::DISPLAY_WIDTH as u32,
-                )
-                .unwrap(),
-                dither::create_quantize_n_bits_func(3).unwrap(),
-            )
-            .iter()
-            .enumerate()
-        {
-            let byte_offset = (index % Self::DISPLAY_WIDTH % 8) as u8;
-            if byte_offset == 0 {
-                channel1.push(0);
-                channel2.push(0);
-            }
-
-            let pixel_int = (pixel / 255. * 3.) as u8;
-
-            if pixel_int & 0x01 == 0x01 {
-                channel1
-                    .last_mut()
-                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
-            }
-
-            if pixel_int & 0x02 == 0x02 {
-                channel2
-                    .last_mut()
-                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
-            }
-        }
-
-        self.draw(&channel1, &channel2).unwrap();
-    }
-
-    pub fn draw(&mut self, register1: &[u8], register2: &[u8]) -> Result<(), &'static str> {
-        self.run(Command::Unknown0x49)?;
-
-        self.run(Command::Unknown0x4E)?;
-        self.run(Command::Unknown0x4F)?;
-        self.run(Command::WriteRegister1(&register1))?;
-
-        self.run(Command::Unknown0x4E)?;
-        self.run(Command::Unknown0x4F)?;
-        self.run(Command::WriteRegister2(&register2))?;
-
-        self.load_look_up_table()?;
-
-        self.run(Command::UpdateSequence(&[0xCF]))?;
-        self.run(Command::Display)?;
-
-        Ok(())
     }
 
     fn reset(&mut self) {
@@ -243,6 +115,125 @@ impl Display {
         }
 
         Ok(())
+    }
+
+    fn draw_raw(&mut self, register1: &[u8], register2: &[u8]) -> Result<(), &'static str> {
+        self.run(Command::Unknown0x49)?;
+
+        self.run(Command::Unknown0x4E)?;
+        self.run(Command::Unknown0x4F)?;
+        self.run(Command::WriteRegister1(&register1))?;
+
+        self.run(Command::Unknown0x4E)?;
+        self.run(Command::Unknown0x4F)?;
+        self.run(Command::WriteRegister2(&register2))?;
+
+        self.load_look_up_table()?;
+
+        self.run(Command::UpdateSequence(&[0xCF]))?;
+        self.run(Command::Display)?;
+
+        Ok(())
+    }
+}
+
+impl Display for EPaper3_7in {
+    type Err = &'static str;
+
+    fn on(&mut self) -> Result<(), &'static str> {
+        self.reset();
+
+        self.run(Command::Unknown0x12)?;
+        thread::sleep(Duration::from_millis(300));
+
+        self.run(Command::Unknown0x46)?;
+        self.run(Command::Unknown0x47)?;
+
+        self.run(Command::SetGateNumber)?;
+
+        self.run(Command::SetGateVoltage)?;
+
+        self.run(Command::SetSourceVoltage)?;
+
+        self.run(Command::SetDataEntrySequence)?;
+        self.run(Command::SetBorder)?;
+        self.run(Command::SetBoosterStrength)?;
+        self.run(Command::SetInternalSensorOn)?;
+        self.run(Command::SetVComValue)?;
+        self.run(Command::SetDisplayOption(&[
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ]))?;
+
+        self.run(Command::SetXRamPosition(&[0x00, 0x00, 0x17, 0x01]))?;
+        self.run(Command::SetYRamPosition(&[0x00, 0x00, 0xDF, 0x01]))?;
+
+        self.run(Command::UpdateSequence(&[0xCF]))?;
+
+        Ok(())
+    }
+
+    fn off(&mut self) -> Result<(), &'static str> {
+        self.clear()?;
+        self.sleep()?;
+
+        Ok(())
+    }
+
+    fn sleep(&mut self) -> Result<(), &'static str> {
+        self.run(Command::Unknown0x50)?;
+        self.run(Command::PowerOff)?;
+        self.run(Command::Sleep)?;
+
+        self.hardware_interface
+            .set_level(GpioOutputPin::DataCommand, gpio::Level::Low);
+        self.hardware_interface
+            .set_level(GpioOutputPin::Reset, gpio::Level::Low);
+
+        Ok(())
+    }
+
+    fn draw(&mut self, image: impl IntoIterator<Item = u8>) -> Result<(), &'static str> {
+        let (display_width, display_height) = self.get_dimensions();
+        let max_value = self.get_color_depth() - 1;
+
+        let (mut channel1, mut channel2): (Vec<u8>, Vec<u8>) = (
+            Vec::with_capacity(display_width * display_height / 8),
+            Vec::with_capacity(display_width * display_height / 8),
+        );
+
+        for (index, pixel) in image.into_iter().enumerate() {
+            let byte_offset = (index % display_width % 8) as u8;
+            if byte_offset == 0 {
+                channel1.push(0);
+                channel2.push(0);
+            }
+
+            if pixel > max_value {
+                return Err("Pixel value exceeds the acceptable color depth.");
+            }
+
+            if pixel & 0x01 == 0x01 {
+                channel1
+                    .last_mut()
+                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
+            }
+
+            if pixel & 0x02 == 0x02 {
+                channel2
+                    .last_mut()
+                    .map(|byte| *byte = *byte | 0x80 >> byte_offset);
+            }
+        }
+
+        self.draw_raw(&channel1, &channel2)
+    }
+
+    fn get_dimensions(&self) -> (usize, usize) {
+        (280, 480)
+    }
+
+    fn get_color_depth(&self) -> u8 {
+        4
     }
 }
 
