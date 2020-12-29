@@ -105,9 +105,9 @@ fn draw_mockup(display: &mut Display) {
                     .buffer
                     .iter()
                     .flat_map(|color: &u8| {
-                        iter::repeat(0x00).take(3).chain(
-                            iter::once(palette.get(*color as usize).unwrap_or(&0x00)).copied(),
-                        )
+                        iter::repeat(0x55).take(3).chain(iter::once(
+                            0xFF - palette.get((color * 3) as usize).unwrap_or(&0x00),
+                        ))
                     })
                     .collect::<Vec<u8>>()[..],
                 piet::ImageFormat::RgbaPremul,
@@ -142,8 +142,7 @@ fn draw_mockup(display: &mut Display) {
                 });
 
             let mut palette: HashMap<u8, u8> = HashMap::new();
-            for i in (0x11..0xFF).step_by(0x44) {
-                // 0x11, 0x55, 0x99, 0xcc
+            for i in (0x55..0xFF).step_by(0x2a) {
                 if let Some(index) = scale.pop() {
                     palette.insert(index, i);
                 }
