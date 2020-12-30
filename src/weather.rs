@@ -1,7 +1,23 @@
 use std::convert::TryFrom;
 
 pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'static str> {
-    Err("Not implemented.")
+    Ok((
+        Some(OpenWeatherResponse {
+            current: WeatherState {
+                time: time::OffsetDateTime::now_utc(),
+                sunrise: time::OffsetDateTime::now_utc() - time::Duration::hour(),
+                sunset: time::OffsetDateTime::now_utc() + time::Duration::hour(),
+                temp: 253.15.into(),
+                wind: Wind {
+                    speed: 3.6,
+                    direction: 180,
+                },
+                condition: 616.into(),
+            },
+            hourly: Vec::new(),
+        }),
+        None,
+    ))
 }
 
 type RadarMap = bytes::Bytes;
@@ -50,10 +66,12 @@ impl TryFrom<json::JsonValue> for OpenWeatherResponse {
 /// }
 /// ```
 pub struct WeatherState {
-    time: time::OffsetDateTime,
-    temp: Temperature,
-    wind: Wind,
-    condition: WeatherCondition,
+    pub time: time::OffsetDateTime,
+    pub sunrise: time::OffsetDateTime,
+    pub sunset: time::OffsetDateTime,
+    pub temp: Temperature,
+    pub wind: Wind,
+    pub condition: WeatherCondition,
 }
 
 impl TryFrom<json::JsonValue> for WeatherState {
@@ -65,6 +83,16 @@ impl TryFrom<json::JsonValue> for WeatherState {
                 json.remove("dt")
                     .as_i64()
                     .ok_or("Missing or invalid \"dt\" value.")?,
+            ),
+            sunrise: time::OffsetDateTime::from_unix_timestamp(
+                json.remove("sunrise")
+                    .as_i64()
+                    .ok_or("Missing or invalid \"sunrise\" value.")?,
+            ),
+            sunset: time::OffsetDateTime::from_unix_timestamp(
+                json.remove("sunset")
+                    .as_i64()
+                    .ok_or("Missing or invalid \"sunset\" value.")?,
             ),
             temp: json
                 .remove("temp")
