@@ -38,11 +38,11 @@ pub fn render(
 
     let weather_icon = ctx
         .make_image(
-            120,
-            120,
+            100,
+            100,
             &resvg::render(
                 &get_weather_icon(weather_report.unwrap().current),
-                usvg::FitTo::Width(120),
+                usvg::FitTo::Width(100),
                 None,
             )
             .unwrap()
@@ -52,7 +52,7 @@ pub fn render(
         .unwrap();
     ctx.draw_image(
         &weather_icon,
-        kurbo::Rect::from_origin_size((145., 295.), (120., 120.)),
+        kurbo::Rect::from_origin_size((165., 305.), (100., 100.)),
         piet::InterpolationMode::NearestNeighbor,
     );
 
@@ -152,7 +152,7 @@ fn get_weather_icon(state: WeatherState) -> usvg::Tree {
 
     usvg::Tree::from_str(
         &match state.condition {
-            WeatherCondition::Thunderstorm(_) => include_str!("../images/weather/010-rain.svg"),
+            WeatherCondition::Thunderstorm(_) => include_str!("../images/weather/043-rain-1.svg"),
             WeatherCondition::Drizzle(_) => include_str!("../images/weather/046-drizzle.svg"),
             WeatherCondition::Rain(subtype) => match subtype {
                 RainType::FreezingRain => include_str!("../images/weather/014-icicles.svg"),
@@ -167,23 +167,26 @@ fn get_weather_icon(state: WeatherState) -> usvg::Tree {
                 | SnowType::LightShowerSnow
                 | SnowType::ShowerSnow
                 | SnowType::HeavyShowerSnow => include_str!("../images/weather/024-snowy.svg"),
-                _ => include_str!("../images/weather/032-snowy-1.svg"),
+                _ => include_str!("../images/weather/041-snowy-2.svg"),
             },
             WeatherCondition::Atmosphere(subtype) => match subtype {
-                AtmosphereType::Tornado => include_str!("../images/weather/006-tornado.svg"),
-                AtmosphereType::Squalls => include_str!("../images/weather/003-windy.svg"),
+                AtmosphereType::Tornado => include_str!("../images/weather/016-tornado-1.svg"),
+                AtmosphereType::Squalls => include_str!("../images/weather/015-windy-1.svg"),
                 _ => include_str!("../images/weather/045-fog.svg"),
             },
             WeatherCondition::Clear if daytime => include_str!("../images/weather/044-sun.svg"),
-            WeatherCondition::Clear => include_str!("../images/weather/002-night.svg"),
+            WeatherCondition::Clear => include_str!("../images/weather/034-night-3.svg"),
             WeatherCondition::Clouds(subtype) => match subtype {
                 CloudsType::FewClouds | CloudsType::ScatteredClouds if daytime => {
-                    include_str!("../images/weather/021-cloudy-1.svg")
+                    include_str!("../images/weather/033-cloudy-3.svg")
                 }
-                CloudsType::FewClouds | CloudsType::ScatteredClouds => {
+                CloudsType::FewClouds => {
+                    include_str!("../images/weather/023-night-2.svg")
+                }
+                CloudsType::ScatteredClouds => {
                     include_str!("../images/weather/028-cloudy-2.svg")
                 }
-                _ => include_str!("../images/weather/011-cloudy.svg"),
+                _ => include_str!("../images/weather/035-cloudy-4.svg"),
             },
             WeatherCondition::Unknown(_) => include_str!("../images/weather/019-weathercock.svg"),
         },
