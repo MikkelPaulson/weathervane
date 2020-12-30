@@ -16,7 +16,9 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
             },
             hourly: Vec::new(),
         }),
-        None,
+        Some(RadarMap::from_static(include_bytes!(
+            "../images/radar-test.gif"
+        ))),
     ))
 }
 
