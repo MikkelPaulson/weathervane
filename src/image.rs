@@ -37,7 +37,9 @@ pub fn render(
 fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
-        ctx.clear(piet::Color::from_rgba32_u32(0x33_33_33));
+        ctx.clear(piet::Color::from_rgba32_u32(0xCC_CC_CC));
+
+        let icon_size = position.height();
 
         {
             let text = CairoText::new()
@@ -47,7 +49,10 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 .unwrap();
             ctx.draw_text(
                 &text,
-                Rect::from_center_size((80., 340.), text.size()).origin(),
+                (
+                    (position.width() - icon_size - text.size().width) / 2.,
+                    position.y0,
+                ),
             );
         }
 
@@ -59,26 +64,33 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 .unwrap();
             ctx.draw_text(
                 &text,
-                Rect::from_center_size((80., 390.), text.size()).origin(),
+                (
+                    (position.width() - icon_size - text.size().width) / 2.,
+                    position.y1,
+                ),
             );
         }
 
         {
             let icon = ctx
                 .make_image(
-                    100,
-                    100,
-                    &resvg::render(&get_weather_icon(state), usvg::FitTo::Width(100), None)
-                        .unwrap()
-                        .data()[..],
+                    icon_size as usize,
+                    icon_size as usize,
+                    &resvg::render(
+                        &get_weather_icon(state),
+                        usvg::FitTo::Height(icon_size as u32),
+                        None,
+                    )
+                    .unwrap()
+                    .data()[..],
                     piet::ImageFormat::RgbaPremul,
                 )
                 .unwrap();
             ctx.draw_image(
                 &icon,
                 Rect::from_origin_size(
-                    (position.x1 - position.height(), position.y0),
-                    (position.height(), position.height()),
+                    (position.x1 - icon_size, position.y0),
+                    (icon_size, icon_size),
                 ),
                 piet::InterpolationMode::NearestNeighbor,
             );
