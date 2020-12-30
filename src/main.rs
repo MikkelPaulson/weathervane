@@ -13,30 +13,11 @@ use weathervane::display::Display;
 
 fn main() {
     let mut display = EPaper3_7in::new();
-    //let mut display = Display::dummy();
     println!("display.on();");
     display.on().unwrap();
 
     println!("Drawing mockup");
     draw_mockup(&mut display);
-    //thread::sleep(Duration::from_secs(5));
-
-    /*
-    for i in 0..=14 {
-        println!("sample {}", i);
-        draw_sample(&mut display, i);
-        thread::sleep(Duration::from_secs(5));
-    }
-    */
-
-    /*
-    println!("display.clear();");
-    display.clear().unwrap();
-    println!("draw_rust_logo();");
-    draw_rust_logo(&mut display);
-    println!("sleeping");
-    thread::sleep(Duration::from_secs(10));
-    */
 
     println!("display.sleep();");
     display.sleep().unwrap();
