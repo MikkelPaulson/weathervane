@@ -1,117 +1,13 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
 pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'static str> {
     Ok((
-        Some(OpenWeatherResponse {
-            current: WeatherState {
-                time: time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::seconds(-18000)),
-                sunrise: time::OffsetDateTime::now_utc()
-                    .to_offset(time::UtcOffset::seconds(-18000))
-                    - time::Duration::hour(),
-                sunset: time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::seconds(-18000))
-                    + time::Duration::hour(),
-                temp: 253.15.into(),
-                wind: Wind {
-                    speed: 3.6,
-                    direction: 180,
-                },
-                clouds: 40,
-                condition: 200.into(),
-            },
-            hourly: vec![
-                WeatherState {
-                    time: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(1),
-                    sunrise: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    sunset: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    temp: 253.15.into(),
-                    wind: Wind {
-                        speed: 3.6,
-                        direction: 180,
-                    },
-                    clouds: 40,
-                    condition: 200.into(),
-                },
-                WeatherState {
-                    time: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(2),
-                    sunrise: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    sunset: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(3),
-                    temp: 253.15.into(),
-                    wind: Wind {
-                        speed: 3.6,
-                        direction: 180,
-                    },
-                    clouds: 40,
-                    condition: 500.into(),
-                },
-                WeatherState {
-                    time: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(3),
-                    sunrise: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    sunset: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hour(),
-                    temp: 253.15.into(),
-                    wind: Wind {
-                        speed: 3.6,
-                        direction: 180,
-                    },
-                    clouds: 40,
-                    condition: 500.into(),
-                },
-                WeatherState {
-                    time: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(4),
-                    sunrise: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    sunset: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(5),
-                    temp: 253.15.into(),
-                    wind: Wind {
-                        speed: 3.6,
-                        direction: 180,
-                    },
-                    clouds: 40,
-                    condition: 600.into(),
-                },
-                WeatherState {
-                    time: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hours(5),
-                    sunrise: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        - time::Duration::hour(),
-                    sunset: time::OffsetDateTime::now_utc()
-                        .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hour(),
-                    temp: 253.15.into(),
-                    wind: Wind {
-                        speed: 3.6,
-                        direction: 180,
-                    },
-                    clouds: 40,
-                    condition: 600.into(),
-                },
-            ],
-        }),
+        Some(
+            json::parse(mock_weather_response())
+                .map_err(|_| "Invalid JSON input.")?
+                .try_into()?,
+        ),
         Some(RadarMap::from_static(include_bytes!(
             "../images/radar-test.gif"
         ))),
@@ -477,4 +373,8 @@ impl From<u16> for CloudsType {
             _ => Self::Unknown(data),
         }
     }
+}
+
+const fn mock_weather_response() -> &'static str {
+    r#"{"lat":45,"lon":-73,"timezone":"America/New_York","timezone_offset":-18000,"current":{"dt":1609444246,"sunrise":1609417812,"sunset":1609449598,"temp":274.42,"feels_like":269.38,"pressure":1021,"humidity":51,"dew_point":266.27,"uvi":0.22,"clouds":90,"visibility":10000,"wind_speed":3.1,"wind_deg":280,"weather":[{"id":804,"main":"Clouds","description":"overcast clouds","icon":"04d"}]},"daily":[{"dt":1609430400,"sunrise":1609417812,"sunset":1609449598,"temp":{"day":273.92,"min":269.22,"max":275.35,"night":269.22,"eve":271.07,"morn":275.01},"feels_like":{"day":267.22,"night":265.17,"eve":266.23,"morn":269.44},"pressure":1017,"humidity":88,"dew_point":269.45,"wind_speed":6.54,"wind_deg":280,"weather":[{"id":616,"main":"Snow","description":"rain and snow","icon":"13d"}],"clouds":46,"pop":1,"rain":0.44,"snow":0.95,"uvi":0.95},{"dt":1609516800,"sunrise":1609504215,"sunset":1609536051,"temp":{"day":271.19,"min":267.93,"max":272.12,"night":270.62,"eve":270.75,"morn":267.94},"feels_like":{"day":267.44,"night":266.72,"eve":267.67,"morn":264.23},"pressure":1033,"humidity":91,"dew_point":266.4,"wind_speed":1.91,"wind_deg":213,"weather":[{"id":600,"main":"Snow","description":"light snow","icon":"13d"}],"clouds":0,"pop":0.52,"snow":0.44,"uvi":1.04},{"dt":1609603200,"sunrise":1609590615,"sunset":1609622506,"temp":{"day":272.42,"min":267.72,"max":272.42,"night":267.72,"eve":270.64,"morn":271.82},"feels_like":{"day":268.97,"night":264.32,"eve":265.92,"morn":267.93},"pressure":1007,"humidity":99,"dew_point":272.18,"wind_speed":1.91,"wind_deg":1,"weather":[{"id":601,"main":"Snow","description":"snow","icon":"13d"}],"clouds":100,"pop":1,"snow":14.9,"uvi":0.45},{"dt":1609689600,"sunrise":1609677012,"sunset":1609708962,"temp":{"day":270.42,"min":266.39,"max":272.78,"night":271.06,"eve":270.38,"morn":267.19},"feels_like":{"day":266.69,"night":267.79,"eve":267.58,"morn":263.74},"pressure":1020,"humidity":97,"dew_point":269.03,"wind_speed":1.9,"wind_deg":70,"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01d"}],"clouds":0,"pop":0.04,"uvi":1.23},{"dt":1609776000,"sunrise":1609763407,"sunset":1609795421,"temp":{"day":271.26,"min":268.03,"max":271.51,"night":268.64,"eve":271.18,"morn":271.43},"feels_like":{"day":267.57,"night":264.47,"eve":266.45,"morn":268.22},"pressure":1013,"humidity":98,"dew_point":270.5,"wind_speed":2.01,"wind_deg":343,"weather":[{"id":804,"main":"Clouds","description":"overcast clouds","icon":"04d"}],"clouds":100,"pop":0.28,"uvi":1.05},{"dt":1609862400,"sunrise":1609849799,"sunset":1609881881,"temp":{"day":269.76,"min":268.27,"max":271.86,"night":269.84,"eve":271.86,"morn":268.64},"feels_like":{"day":265.11,"night":265.34,"eve":266.81,"morn":264.46},"pressure":1012,"humidity":98,"dew_point":269.09,"wind_speed":3.13,"wind_deg":337,"weather":[{"id":600,"main":"Snow","description":"light snow","icon":"13d"}],"clouds":100,"pop":0.68,"snow":3.08,"uvi":2},{"dt":1609948800,"sunrise":1609936189,"sunset":1609968343,"temp":{"day":267.93,"min":264.26,"max":270.54,"night":266.24,"eve":268.74,"morn":265.2},"feels_like":{"day":264.68,"night":262.87,"eve":265.76,"morn":261.83},"pressure":1023,"humidity":97,"dew_point":266.85,"wind_speed":0.82,"wind_deg":265,"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01d"}],"clouds":2,"pop":0.2,"uvi":2},{"dt":1610035200,"sunrise":1610022576,"sunset":1610054807,"temp":{"day":270.7,"min":266.08,"max":272.95,"night":270.86,"eve":271.91,"morn":266.15},"feels_like":{"day":267.46,"night":267.89,"eve":268.76,"morn":262.65},"pressure":1023,"humidity":97,"dew_point":269.28,"wind_speed":1.24,"wind_deg":126,"weather":[{"id":804,"main":"Clouds","description":"overcast clouds","icon":"04d"}],"clouds":97,"pop":0,"uvi":2}]}"#
 }
