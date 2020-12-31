@@ -51,7 +51,7 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 
         {
             let text = CairoText::new()
-                .new_text_layout("-23°")
+                .new_text_layout(format!("{}", state.temp))
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
                 .build()
                 .unwrap();
@@ -111,12 +111,47 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 
 fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
-        ctx.clip(&position);
-        ctx.clear(piet::Color::rgb(
-            0xEE as f64 - (position.x0 / position.width() * 17.),
-            0xEE as f64 - (position.x0 / position.width() * 17.),
-            0xEE as f64 - (position.x0 / position.width() * 17.),
-        ));
+        ctx.clip(position);
+        ctx.clear(piet::Color::from_rgba32_u32(0xEE_EE_EE));
+
+        let icon_size = position.height() / 3. * 2.;
+
+        {
+            let text = CairoText::new()
+                .new_text_layout(format!("{}", state.temp))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
+                .build()
+                .unwrap();
+            ctx.draw_text(
+                &text,
+                ((position.width() - text.size().width) / 2., icon_size),
+            );
+        }
+
+        {
+            let icon = ctx
+                .make_image(
+                    icon_size as usize,
+                    icon_size as usize,
+                    &resvg::render(
+                        &get_weather_icon(state),
+                        usvg::FitTo::Height(icon_size as u32),
+                        None,
+                    )
+                    .unwrap()
+                    .data()[..],
+                    piet::ImageFormat::RgbaPremul,
+                )
+                .unwrap();
+            ctx.draw_image(
+                &icon,
+                Rect::from_origin_size(
+                    ((position.x0 - icon_size) / 2., position.y0),
+                    (icon_size, icon_size),
+                ),
+                piet::InterpolationMode::NearestNeighbor,
+            );
+        }
 
         Ok(())
     })

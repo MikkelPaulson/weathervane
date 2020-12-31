@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt;
 
 pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'static str> {
     Ok((
@@ -33,7 +34,7 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 616.into(),
+                    condition: 800.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -50,7 +51,7 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 616.into(),
+                    condition: 919.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -67,7 +68,7 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 616.into(),
+                    condition: 300.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -84,7 +85,7 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 616.into(),
+                    condition: 200.into(),
                 },
             ],
         }),
@@ -211,6 +212,12 @@ impl Temperature {
 impl From<f32> for Temperature {
     fn from(input: f32) -> Self {
         Self::kelvin(input)
+    }
+}
+
+impl fmt::Display for Temperature {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}°", self.celsius().round())
     }
 }
 
