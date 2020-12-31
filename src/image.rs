@@ -84,7 +84,7 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
             ctx.draw_text(
                 &wind_direction,
                 (
-                    (text_area_width / 2. - wind_speed.size().width) / 2.,
+                    (text_area_width / 2. - wind_direction.size().width) / 2.,
                     position.y1 - wind_speed.size().height - wind_direction.size().height,
                 ),
             );
