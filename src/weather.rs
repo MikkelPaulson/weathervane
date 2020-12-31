@@ -273,12 +273,6 @@ impl Wind {
     }
 }
 
-impl fmt::Display for Wind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{} {}", self.arrow(), self.km_h())
-    }
-}
-
 pub enum WeatherCondition {
     Thunderstorm(ThunderstormType),
     Drizzle(DrizzleType),

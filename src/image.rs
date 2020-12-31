@@ -48,6 +48,7 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
         ctx.clear(piet::Color::from_rgba32_u32(0xFDFDFD));
 
         let icon_size = position.height() - 20.;
+        let text_area_width = position.width() - icon_size;
 
         {
             let text = CairoText::new()
@@ -57,24 +58,34 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 .unwrap();
             ctx.draw_text(
                 &text,
-                (
-                    (position.width() - icon_size - text.size().width) / 2.,
-                    position.y0,
-                ),
+                ((text_area_width - text.size().width) / 2., position.y0),
             );
         }
 
         {
-            let text = CairoText::new()
-                .new_text_layout(format!("{}", state.wind))
+            let wind_speed = CairoText::new()
+                .new_text_layout(format!("{} km/h", state.wind.km_h()))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 6.))
+                .build()
+                .unwrap();
+            let wind_direction = CairoText::new()
+                .new_text_layout(state.wind.arrow())
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 4.))
                 .build()
                 .unwrap();
+
             ctx.draw_text(
-                &text,
+                &wind_speed,
                 (
-                    (position.width() - icon_size - text.size().width) / 2.,
-                    position.y1 - text.size().height,
+                    (text_area_width / 2. - wind_speed.size().width) / 2.,
+                    position.y1 - wind_speed.size().height,
+                ),
+            );
+            ctx.draw_text(
+                &wind_direction,
+                (
+                    (text_area_width / 2. - wind_speed.size().width) / 2.,
+                    position.y1 - wind_speed.size().height - wind_direction.size().height,
                 ),
             );
         }
