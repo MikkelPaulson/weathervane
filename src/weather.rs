@@ -87,6 +87,23 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                     },
                     condition: 200.into(),
                 },
+                WeatherState {
+                    time: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hours(5),
+                    sunrise: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        - time::Duration::hour(),
+                    sunset: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hour(),
+                    temp: 253.15.into(),
+                    wind: Wind {
+                        speed: 3.6,
+                        direction: 180,
+                    },
+                    condition: 200.into(),
+                },
             ],
         }),
         Some(RadarMap::from_static(include_bytes!(

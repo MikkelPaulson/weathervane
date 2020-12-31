@@ -21,14 +21,14 @@ pub fn render(
         draw_current_conditions(
             ctx,
             &weather_report.current,
-            Rect::from_origin_size((0., 260.), (280., 100.)),
+            Rect::from_origin_size((0., 250.), (280., 120.)),
         );
 
-        for (i, forecast) in weather_report.hourly.iter().take(4).enumerate() {
+        for (i, forecast) in weather_report.hourly.iter().take(5).enumerate() {
             draw_forecast(
                 ctx,
                 forecast,
-                Rect::from_origin_size(((i * 70) as f64, 360.), (70., 120.)),
+                Rect::from_origin_size(((i * 56) as f64, 380.), (56., 100.)),
             );
         }
     }
@@ -45,14 +45,14 @@ pub fn render(
 fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
-        ctx.clear(piet::Color::from_rgba32_u32(0xCC_CC_CC));
+        ctx.clear(piet::Color::from_rgba32_u32(0xFDFDFD));
 
-        let icon_size = position.height();
+        let icon_size = position.height() - 20.;
 
         {
             let text = CairoText::new()
                 .new_text_layout(format!("{}", state.temp))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 2.))
                 .build()
                 .unwrap();
             ctx.draw_text(
@@ -97,7 +97,10 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
             ctx.draw_image(
                 &icon,
                 Rect::from_origin_size(
-                    (position.x1 - icon_size, position.y0),
+                    (
+                        position.x1 - icon_size - 10.,
+                        position.y0 + (position.height() - icon_size) / 2.,
+                    ),
                     (icon_size, icon_size),
                 ),
                 piet::InterpolationMode::NearestNeighbor,
@@ -112,20 +115,20 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
-        ctx.clear(piet::Color::from_rgba32_u32(0xEE_EE_EE));
+        ctx.clear(piet::Color::from_rgba32_u32(0xFDFDFD));
 
-        let icon_size = position.height() / 2.;
+        let icon_size = position.height() / 2. - 10.;
 
         {
             let text = CairoText::new()
                 .new_text_layout(format!("{}", state.temp))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 3.))
                 .build()
                 .unwrap();
             ctx.draw_text(
                 &text,
                 (
-                    position.x0 + (position.width() - text.size().width) / 3.,
+                    position.x0 + (position.width() - text.size().width) / 2.,
                     position.y0,
                 ),
             );
@@ -151,7 +154,7 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
                 Rect::from_origin_size(
                     (
                         position.x0 + (position.width() - icon_size) / 2.,
-                        position.y0,
+                        position.y0 + (position.height() - icon_size) / 2.,
                     ),
                     (icon_size, icon_size),
                 ),
@@ -162,13 +165,13 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
         {
             let text = CairoText::new()
                 .new_text_layout(format!("{}h", state.time.hour()))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 3.))
                 .build()
                 .unwrap();
             ctx.draw_text(
                 &text,
                 (
-                    position.x0 + (position.width() - text.size().width) / 3.,
+                    position.x0 + (position.width() - text.size().width) / 2.,
                     position.y1 - text.size().height,
                 ),
             );
