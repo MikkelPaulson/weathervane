@@ -66,15 +66,15 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 
         {
             let text = CairoText::new()
-                .new_text_layout("-19° / -25°")
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 5.))
+                .new_text_layout(format!("{}", state.wind))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 4.))
                 .build()
                 .unwrap();
             ctx.draw_text(
                 &text,
                 (
                     (position.width() - icon_size - text.size().width) / 2.,
-                    position.y1,
+                    position.y1 - text.size().height,
                 ),
             );
         }

@@ -228,7 +228,7 @@ impl TryFrom<json::JsonValue> for WeatherState {
 pub struct Temperature(f32);
 
 impl Temperature {
-    pub const fn kelvin(kelvin: f32) -> Self {
+    pub const fn from_kelvin(kelvin: f32) -> Self {
         Self(kelvin)
     }
 
@@ -239,7 +239,7 @@ impl Temperature {
 
 impl From<f32> for Temperature {
     fn from(input: f32) -> Self {
-        Self::kelvin(input)
+        Self::from_kelvin(input)
     }
 }
 
@@ -250,11 +250,34 @@ impl fmt::Display for Temperature {
 }
 
 pub struct Wind {
-    speed: f32,
-    direction: u16,
+    pub speed: f32,
+    pub direction: u16,
 }
 
-impl Wind {}
+impl Wind {
+    pub fn km_h(&self) -> f32 {
+        self.speed * 3.6
+    }
+
+    pub fn arrow(&self) -> &'static str {
+        match self.direction {
+            23..=67 => "⇗",
+            68..=112 => "⇒",
+            113..=157 => "⇘",
+            158..=202 => "⇓",
+            203..=247 => "⇙",
+            248..=292 => "⇐",
+            293..=337 => "⇖",
+            _ => "⇑",
+        }
+    }
+}
+
+impl fmt::Display for Wind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{} {}", self.arrow(), self.km_h())
+    }
+}
 
 pub enum WeatherCondition {
     Thunderstorm(ThunderstormType),
