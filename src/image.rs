@@ -289,14 +289,31 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: bytes::Bytes, pos
 
 fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
     let daytime = state.time > state.sunrise && state.time < state.sunset;
+    let partly_cloudy = state.clouds <= 50;
 
     usvg::Tree::from_str(
         match &state.condition {
+            WeatherCondition::Thunderstorm(_) if partly_cloudy => {
+                if daytime {
+                    include_str!("../images/weather/001-storm.svg")
+                } else {
+                    include_str!("../images/weather/022-storm-1.svg")
+                }
+            }
             WeatherCondition::Thunderstorm(_) => include_str!("../images/weather/043-rain-1.svg"),
             WeatherCondition::Drizzle(_) => include_str!("../images/weather/046-drizzle.svg"),
             WeatherCondition::Rain(subtype) => match subtype {
                 RainType::FreezingRain => include_str!("../images/weather/014-icicles.svg"),
-                _ => include_str!("../images/weather/004-rainy.svg"),
+                _ if partly_cloudy => {
+                    if daytime {
+                        include_str!("../images/weather/011-cloudy.svg")
+                    } else {
+                        include_str!("../images/weather/002-night.svg")
+                    }
+                }
+                _ => {
+                    include_str!("../images/weather/004-rainy.svg")
+                }
             },
             WeatherCondition::Snow(subtype) => match subtype {
                 SnowType::Sleet | SnowType::LightShowerSleet | SnowType::ShowerSleet => {
@@ -307,6 +324,13 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                 | SnowType::LightShowerSnow
                 | SnowType::ShowerSnow
                 | SnowType::HeavyShowerSnow => include_str!("../images/weather/024-snowy.svg"),
+                _ if partly_cloudy => {
+                    if daytime {
+                        include_str!("../images/weather/032-snowy-1.svg")
+                    } else {
+                        include_str!("../images/weather/013-night-1.svg")
+                    }
+                }
                 _ => include_str!("../images/weather/041-snowy-2.svg"),
             },
             WeatherCondition::Atmosphere(subtype) => match subtype {

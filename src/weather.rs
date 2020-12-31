@@ -16,7 +16,8 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                     speed: 3.6,
                     direction: 180,
                 },
-                condition: 616.into(),
+                clouds: 40,
+                condition: 200.into(),
             },
             hourly: vec![
                 WeatherState {
@@ -28,13 +29,14 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         - time::Duration::hour(),
                     sunset: time::OffsetDateTime::now_utc()
                         .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hour(),
+                        - time::Duration::hour(),
                     temp: 253.15.into(),
                     wind: Wind {
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 800.into(),
+                    clouds: 40,
+                    condition: 200.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -45,13 +47,14 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         - time::Duration::hour(),
                     sunset: time::OffsetDateTime::now_utc()
                         .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hour(),
+                        + time::Duration::hours(3),
                     temp: 253.15.into(),
                     wind: Wind {
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 919.into(),
+                    clouds: 40,
+                    condition: 500.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -68,7 +71,8 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 300.into(),
+                    clouds: 40,
+                    condition: 500.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -79,13 +83,14 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         - time::Duration::hour(),
                     sunset: time::OffsetDateTime::now_utc()
                         .to_offset(time::UtcOffset::seconds(-18000))
-                        + time::Duration::hour(),
+                        + time::Duration::hours(5),
                     temp: 253.15.into(),
                     wind: Wind {
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 200.into(),
+                    clouds: 40,
+                    condition: 600.into(),
                 },
                 WeatherState {
                     time: time::OffsetDateTime::now_utc()
@@ -102,7 +107,8 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                         speed: 3.6,
                         direction: 180,
                     },
-                    condition: 200.into(),
+                    clouds: 40,
+                    condition: 600.into(),
                 },
             ],
         }),
@@ -163,6 +169,7 @@ pub struct WeatherState {
     pub sunset: time::OffsetDateTime,
     pub temp: Temperature,
     pub wind: Wind,
+    pub clouds: u8,
     pub condition: WeatherCondition,
 }
 
@@ -201,6 +208,10 @@ impl TryFrom<json::JsonValue> for WeatherState {
                     .as_u16()
                     .ok_or("Missing or invalid \"wind_deg\" value.")?,
             },
+            clouds: json
+                .remove("clouds")
+                .as_u8()
+                .ok_or("Empty or invalid \"clouds\" value.")?,
             condition: json
                 .remove("weather")
                 .members_mut()
