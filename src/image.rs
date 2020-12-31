@@ -295,9 +295,9 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
         match &state.condition {
             WeatherCondition::Thunderstorm(_) if partly_cloudy => {
                 if daytime {
-                    include_str!("../images/weather/001-storm.svg")
-                } else {
                     include_str!("../images/weather/022-storm-1.svg")
+                } else {
+                    include_str!("../images/weather/042-storm-2.svg")
                 }
             }
             WeatherCondition::Thunderstorm(_) => include_str!("../images/weather/043-rain-1.svg"),
@@ -308,7 +308,7 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                     if daytime {
                         include_str!("../images/weather/011-cloudy.svg")
                     } else {
-                        include_str!("../images/weather/002-night.svg")
+                        include_str!("../images/weather/013-night-1.svg")
                     }
                 }
                 _ => {
@@ -328,7 +328,7 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                     if daytime {
                         include_str!("../images/weather/032-snowy-1.svg")
                     } else {
-                        include_str!("../images/weather/013-night-1.svg")
+                        include_str!("../images/weather/002-night.svg")
                     }
                 }
                 _ => include_str!("../images/weather/041-snowy-2.svg"),
