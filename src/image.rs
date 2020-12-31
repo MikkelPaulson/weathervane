@@ -21,14 +21,14 @@ pub fn render(
         draw_current_conditions(
             ctx,
             &weather_report.current,
-            Rect::from_origin_size((0., 300.), (280., 100.)),
+            Rect::from_origin_size((0., 260.), (280., 100.)),
         );
 
         for (i, forecast) in weather_report.hourly.iter().take(4).enumerate() {
             draw_forecast(
                 ctx,
                 forecast,
-                Rect::from_origin_size(((i * 95) as f64, 400.), (95., 80.)),
+                Rect::from_origin_size(((i * 95) as f64, 400.), (95., 120.)),
             );
         }
     }
@@ -37,7 +37,7 @@ pub fn render(
         draw_weather_radar(
             ctx,
             radar_map,
-            Rect::from_origin_size(Point::ORIGIN, (280., 280.)),
+            Rect::from_origin_size(Point::ORIGIN, (280., 240.)),
         );
     }
 }
@@ -124,7 +124,10 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
                 .unwrap();
             ctx.draw_text(
                 &text,
-                ((position.width() - text.size().width) / 2., icon_size),
+                (
+                    position.x0 + (position.width() - text.size().width) / 2.,
+                    position.y1 - text.size().height,
+                ),
             );
         }
 
@@ -146,7 +149,10 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
             ctx.draw_image(
                 &icon,
                 Rect::from_origin_size(
-                    ((position.x0 - icon_size) / 2., position.y0),
+                    (
+                        position.x0 + (position.width() - icon_size) / 2.,
+                        position.y0,
+                    ),
                     (icon_size, icon_size),
                 ),
                 piet::InterpolationMode::NearestNeighbor,
