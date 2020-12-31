@@ -28,7 +28,7 @@ pub fn render(
             draw_forecast(
                 ctx,
                 forecast,
-                Rect::from_origin_size(((i * 95) as f64, 400.), (95., 120.)),
+                Rect::from_origin_size(((i * 70) as f64, 360.), (70., 120.)),
             );
         }
     }
@@ -114,7 +114,7 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
         ctx.clip(position);
         ctx.clear(piet::Color::from_rgba32_u32(0xEE_EE_EE));
 
-        let icon_size = position.height() / 3. * 2.;
+        let icon_size = position.height() / 2.;
 
         {
             let text = CairoText::new()
@@ -125,8 +125,8 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
             ctx.draw_text(
                 &text,
                 (
-                    position.x0 + (position.width() - text.size().width) / 2.,
-                    position.y1 - text.size().height,
+                    position.x0 + (position.width() - text.size().width) / 3.,
+                    position.y0,
                 ),
             );
         }
@@ -156,6 +156,21 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
                     (icon_size, icon_size),
                 ),
                 piet::InterpolationMode::NearestNeighbor,
+            );
+        }
+
+        {
+            let text = CairoText::new()
+                .new_text_layout(format!("{}h", state.time.hour()))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 10. * 6.))
+                .build()
+                .unwrap();
+            ctx.draw_text(
+                &text,
+                (
+                    position.x0 + (position.width() - text.size().width) / 3.,
+                    position.y1 - text.size().height,
+                ),
             );
         }
 
