@@ -17,7 +17,76 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
                 },
                 condition: 616.into(),
             },
-            hourly: Vec::new(),
+            hourly: vec![
+                WeatherState {
+                    time: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hours(1),
+                    sunrise: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        - time::Duration::hour(),
+                    sunset: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hour(),
+                    temp: 253.15.into(),
+                    wind: Wind {
+                        speed: 3.6,
+                        direction: 180,
+                    },
+                    condition: 616.into(),
+                },
+                WeatherState {
+                    time: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hours(2),
+                    sunrise: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        - time::Duration::hour(),
+                    sunset: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hour(),
+                    temp: 253.15.into(),
+                    wind: Wind {
+                        speed: 3.6,
+                        direction: 180,
+                    },
+                    condition: 616.into(),
+                },
+                WeatherState {
+                    time: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hours(3),
+                    sunrise: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        - time::Duration::hour(),
+                    sunset: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hour(),
+                    temp: 253.15.into(),
+                    wind: Wind {
+                        speed: 3.6,
+                        direction: 180,
+                    },
+                    condition: 616.into(),
+                },
+                WeatherState {
+                    time: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hours(4),
+                    sunrise: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        - time::Duration::hour(),
+                    sunset: time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::seconds(-18000))
+                        + time::Duration::hour(),
+                    temp: 253.15.into(),
+                    wind: Wind {
+                        speed: 3.6,
+                        direction: 180,
+                    },
+                    condition: 616.into(),
+                },
+            ],
         }),
         Some(RadarMap::from_static(include_bytes!(
             "../images/radar-test.gif"
