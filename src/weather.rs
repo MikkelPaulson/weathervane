@@ -4,9 +4,12 @@ pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<RadarMap>), &'stat
     Ok((
         Some(OpenWeatherResponse {
             current: WeatherState {
-                time: time::OffsetDateTime::now_utc(),
-                sunrise: time::OffsetDateTime::now_utc() - time::Duration::hour(),
-                sunset: time::OffsetDateTime::now_utc() + time::Duration::hour(),
+                time: time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::seconds(-18000)),
+                sunrise: time::OffsetDateTime::now_utc()
+                    .to_offset(time::UtcOffset::seconds(-18000))
+                    - time::Duration::hour(),
+                sunset: time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::seconds(-18000))
+                    + time::Duration::hour(),
                 temp: 253.15.into(),
                 wind: Wind {
                     speed: 3.6,

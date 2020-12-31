@@ -23,6 +23,14 @@ pub fn render(
             &weather_report.current,
             Rect::from_origin_size((0., 300.), (280., 100.)),
         );
+
+        for (i, forecast) in weather_report.hourly.iter().take(4).enumerate() {
+            draw_forecast(
+                ctx,
+                forecast,
+                Rect::from_origin_size(((i * 95) as f64, 400.), (95., 80.)),
+            );
+        }
     }
 
     if let Some(radar_map) = radar_map {
@@ -101,7 +109,19 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
     .unwrap()
 }
 
-fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {}
+fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
+    ctx.with_save(|ctx| {
+        ctx.clip(&position);
+        ctx.clear(piet::Color::rgb(
+            0xEE as f64 - (position.x0 / position.width() * 17.),
+            0xEE as f64 - (position.x0 / position.width() * 17.),
+            0xEE as f64 - (position.x0 / position.width() * 17.),
+        ));
+
+        Ok(())
+    })
+    .unwrap();
+}
 
 fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: bytes::Bytes, position: Rect) {
     ctx.with_save(|ctx| {
