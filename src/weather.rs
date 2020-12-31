@@ -27,22 +27,53 @@ impl TryFrom<json::JsonValue> for OpenWeatherResponse {
     type Error = &'static str;
 
     fn try_from(mut json: json::JsonValue) -> Result<Self, Self::Error> {
+        let tz_offset = json
+            .remove("timezone_offset")
+            .as_i32()
+            .map_or(time::UtcOffset::UTC, |i| time::UtcOffset::seconds(i));
+
+        let current = WeatherState::try_from(json.remove("current"))?;
+        current.time.to_offset(tz_offset);
+        let (sunrise, sunset) = (
+            current.sunrise.map(|t| t.to_offset(tz_offset)),
+            current.sunset.map(|t| t.to_offset(tz_offset)),
+        );
+
         Ok(Self {
-            current: WeatherState::try_from(json.remove("current"))?,
+            current,
             minutely: json
                 .remove("minutely")
                 .members_mut()
-                .map(|e| WeatherState::try_from(e.take()))
+                .map(|j| {
+                    WeatherState::try_from(j.take()).map(|state| {
+                        state.time.to_offset(tz_offset);
+                        state
+                    })
+                })
                 .collect::<Result<_, _>>()?,
             hourly: json
                 .remove("hourly")
                 .members_mut()
-                .map(|e| WeatherState::try_from(e.take()))
+                .map(|j| {
+                    WeatherState::try_from(j.take()).map(|mut state| {
+                        state.time.to_offset(tz_offset);
+                        state.sunrise = sunrise;
+                        state.sunset = sunset;
+                        state
+                    })
+                })
                 .collect::<Result<_, _>>()?,
             daily: json
                 .remove("daily")
                 .members_mut()
-                .map(|e| WeatherState::try_from(e.take()))
+                .map(|j| {
+                    WeatherState::try_from(j.take()).map(|state| {
+                        state.time.to_offset(tz_offset);
+                        state.sunrise.map(|t| t.to_offset(tz_offset));
+                        state.sunset.map(|t| t.to_offset(tz_offset));
+                        state
+                    })
+                })
                 .collect::<Result<_, _>>()?,
         })
     }
