@@ -21,14 +21,14 @@ pub fn render(
         draw_current_conditions(
             ctx,
             &weather_report.current,
-            Rect::from_origin_size((0., 250.), (280., 120.)),
+            Rect::from_origin_size((0., 270.), (280., 120.)),
         );
 
-        for (i, forecast) in weather_report.hourly.iter().take(5).enumerate() {
+        for (i, forecast) in weather_report.hourly.iter().take(6).enumerate() {
             draw_forecast(
                 ctx,
                 forecast,
-                Rect::from_origin_size(((i * 56) as f64, 380.), (56., 100.)),
+                Rect::from_origin_size((280. / 6. * i as f64, 400.), (280. / 6., 80.)),
             );
         }
     }
@@ -37,7 +37,7 @@ pub fn render(
         draw_weather_radar(
             ctx,
             radar_map,
-            Rect::from_origin_size(Point::ORIGIN, (280., 240.)),
+            Rect::from_origin_size(Point::ORIGIN, (280., 260.)),
         );
     }
 }
@@ -45,15 +45,14 @@ pub fn render(
 fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
-        ctx.clear(piet::Color::from_rgba32_u32(0xFDFDFD));
 
         let icon_size = position.height() - 20.;
         let text_area_width = position.width() - icon_size;
 
         if let Some(temp) = &state.temp {
             let text = CairoText::new()
-                .new_text_layout(format!("{}", temp))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 2.))
+                .new_text_layout(format!(" {}", temp))
+                .default_attribute(piet::TextAttribute::FontSize(position.height() / 3. * 2.))
                 .build()
                 .unwrap();
             ctx.draw_text(
@@ -64,7 +63,17 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 
         if let Some(wind) = &state.wind {
             let wind_speed = CairoText::new()
-                .new_text_layout(format!("{} km/h", wind.km_h().round()))
+                .new_text_layout(
+                    if wind.gust.is_some() && wind.gust.unwrap() > wind.speed + 3. {
+                        format!(
+                            "{}-{} km/h",
+                            wind.speed_km_h().round(),
+                            wind.gust_km_h().unwrap().round()
+                        )
+                    } else {
+                        format!("{} km/h", wind.speed_km_h().round())
+                    },
+                )
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 6.))
                 .build()
                 .unwrap();
@@ -75,17 +84,19 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 .unwrap();
 
             ctx.draw_text(
-                &wind_speed,
+                &wind_direction,
                 (
-                    (text_area_width / 2. - wind_speed.size().width) / 2.,
-                    position.y1 - wind_speed.size().height,
+                    (text_area_width - wind_direction.size().width - wind_speed.size().width) / 2.,
+                    position.y1
+                        - wind_speed.size().height
+                        - (wind_direction.size().height - wind_speed.size().height) / 2.,
                 ),
             );
             ctx.draw_text(
-                &wind_direction,
+                &wind_speed,
                 (
-                    (text_area_width / 2. - wind_direction.size().width) / 2.,
-                    position.y1 - wind_speed.size().height - wind_direction.size().height,
+                    (text_area_width + wind_direction.size().width - wind_speed.size().width) / 2.,
+                    position.y1 - wind_speed.size().height,
                 ),
             );
         }
@@ -126,14 +137,13 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
-        ctx.clear(piet::Color::from_rgba32_u32(0xFDFDFD));
 
         let icon_size = position.height() / 2. - 10.;
 
         if let Some(temp) = &state.temp {
             let text = CairoText::new()
-                .new_text_layout(format!("{}", temp))
-                .default_attribute(piet::TextAttribute::FontSize(position.width() / 3.))
+                .new_text_layout(format!(" {}", temp))
+                .default_attribute(piet::TextAttribute::FontSize(position.width() / 5. * 2.))
                 .build()
                 .unwrap();
             ctx.draw_text(

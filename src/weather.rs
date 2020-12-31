@@ -135,7 +135,11 @@ impl TryFrom<json::JsonValue> for WeatherState {
                 .remove("wind_speed")
                 .as_f32()
                 .zip(json.remove("wind_deg").as_u16())
-                .map(|(speed, direction)| Wind { speed, direction }),
+                .map(|(speed, direction)| Wind {
+                    speed,
+                    direction,
+                    gust: json.remove("wind_gust").as_f32(),
+                }),
             clouds: json.remove("clouds").as_u8(),
             condition: json
                 .remove("weather")
@@ -175,11 +179,16 @@ impl fmt::Display for Temperature {
 pub struct Wind {
     pub speed: f32,
     pub direction: u16,
+    pub gust: Option<f32>,
 }
 
 impl Wind {
-    pub fn km_h(&self) -> f32 {
+    pub fn speed_km_h(&self) -> f32 {
         self.speed * 3.6
+    }
+
+    pub fn gust_km_h(&self) -> Option<f32> {
+        self.gust.map(|i| i * 3.6)
     }
 
     pub fn arrow(&self) -> &'static str {
