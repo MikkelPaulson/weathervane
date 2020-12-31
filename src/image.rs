@@ -50,9 +50,9 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
         let icon_size = position.height() - 20.;
         let text_area_width = position.width() - icon_size;
 
-        {
+        if let Some(temp) = &state.temp {
             let text = CairoText::new()
-                .new_text_layout(format!("{}", state.temp))
+                .new_text_layout(format!("{}", temp))
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 2.))
                 .build()
                 .unwrap();
@@ -62,14 +62,14 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
             );
         }
 
-        {
+        if let Some(wind) = &state.wind {
             let wind_speed = CairoText::new()
-                .new_text_layout(format!("{} km/h", state.wind.km_h()))
+                .new_text_layout(format!("{} km/h", wind.km_h().round()))
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 6.))
                 .build()
                 .unwrap();
             let wind_direction = CairoText::new()
-                .new_text_layout(state.wind.arrow())
+                .new_text_layout(wind.arrow())
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 4.))
                 .build()
                 .unwrap();
@@ -130,9 +130,9 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
 
         let icon_size = position.height() / 2. - 10.;
 
-        {
+        if let Some(temp) = &state.temp {
             let text = CairoText::new()
-                .new_text_layout(format!("{}", state.temp))
+                .new_text_layout(format!("{}", temp))
                 .default_attribute(piet::TextAttribute::FontSize(position.width() / 3.))
                 .build()
                 .unwrap();
@@ -299,21 +299,28 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: bytes::Bytes, pos
 }
 
 fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
-    let daytime = state.time > state.sunrise && state.time < state.sunset;
-    let partly_cloudy = state.clouds <= 50;
+    let daytime = if let (Some(sunrise), Some(sunset)) = (state.sunrise, state.sunset) {
+        state.time > sunrise && state.time < sunset
+    } else {
+        true
+    };
+
+    let partly_cloudy = state.clouds.map_or(false, |clouds| clouds <= 50);
 
     usvg::Tree::from_str(
         match &state.condition {
-            WeatherCondition::Thunderstorm(_) if partly_cloudy => {
+            Some(WeatherCondition::Thunderstorm(_)) if partly_cloudy => {
                 if daytime {
                     include_str!("../images/weather/022-storm-1.svg")
                 } else {
                     include_str!("../images/weather/042-storm-2.svg")
                 }
             }
-            WeatherCondition::Thunderstorm(_) => include_str!("../images/weather/043-rain-1.svg"),
-            WeatherCondition::Drizzle(_) => include_str!("../images/weather/046-drizzle.svg"),
-            WeatherCondition::Rain(subtype) => match subtype {
+            Some(WeatherCondition::Thunderstorm(_)) => {
+                include_str!("../images/weather/043-rain-1.svg")
+            }
+            Some(WeatherCondition::Drizzle(_)) => include_str!("../images/weather/046-drizzle.svg"),
+            Some(WeatherCondition::Rain(subtype)) => match subtype {
                 RainType::FreezingRain => include_str!("../images/weather/014-icicles.svg"),
                 _ if partly_cloudy => {
                     if daytime {
@@ -326,7 +333,7 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                     include_str!("../images/weather/004-rainy.svg")
                 }
             },
-            WeatherCondition::Snow(subtype) => match subtype {
+            Some(WeatherCondition::Snow(subtype)) => match subtype {
                 SnowType::Sleet | SnowType::LightShowerSleet | SnowType::ShowerSleet => {
                     include_str!("../images/weather/031-hail.svg")
                 }
@@ -344,14 +351,16 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                 }
                 _ => include_str!("../images/weather/041-snowy-2.svg"),
             },
-            WeatherCondition::Atmosphere(subtype) => match subtype {
+            Some(WeatherCondition::Atmosphere(subtype)) => match subtype {
                 AtmosphereType::Tornado => include_str!("../images/weather/016-tornado-1.svg"),
                 AtmosphereType::Squalls => include_str!("../images/weather/015-windy-1.svg"),
                 _ => include_str!("../images/weather/045-fog.svg"),
             },
-            WeatherCondition::Clear if daytime => include_str!("../images/weather/044-sun.svg"),
-            WeatherCondition::Clear => include_str!("../images/weather/034-night-3.svg"),
-            WeatherCondition::Clouds(subtype) => match subtype {
+            Some(WeatherCondition::Clear) if daytime => {
+                include_str!("../images/weather/044-sun.svg")
+            }
+            Some(WeatherCondition::Clear) => include_str!("../images/weather/034-night-3.svg"),
+            Some(WeatherCondition::Clouds(subtype)) => match subtype {
                 CloudsType::FewClouds | CloudsType::ScatteredClouds if daytime => {
                     include_str!("../images/weather/033-cloudy-3.svg")
                 }
@@ -363,7 +372,7 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                 }
                 _ => include_str!("../images/weather/035-cloudy-4.svg"),
             },
-            WeatherCondition::Unknown(_) => include_str!("../images/weather/019-weathercock.svg"),
+            _ => include_str!("../images/weather/019-weathercock.svg"),
         },
         &usvg::Options::default(),
     )

@@ -18,7 +18,9 @@ type RadarMap = bytes::Bytes;
 
 pub struct OpenWeatherResponse {
     pub current: WeatherState,
+    pub minutely: Vec<WeatherState>,
     pub hourly: Vec<WeatherState>,
+    pub daily: Vec<WeatherState>,
 }
 
 impl TryFrom<json::JsonValue> for OpenWeatherResponse {
@@ -27,8 +29,18 @@ impl TryFrom<json::JsonValue> for OpenWeatherResponse {
     fn try_from(mut json: json::JsonValue) -> Result<Self, Self::Error> {
         Ok(Self {
             current: WeatherState::try_from(json.remove("current"))?,
+            minutely: json
+                .remove("minutely")
+                .members_mut()
+                .map(|e| WeatherState::try_from(e.take()))
+                .collect::<Result<_, _>>()?,
             hourly: json
                 .remove("hourly")
+                .members_mut()
+                .map(|e| WeatherState::try_from(e.take()))
+                .collect::<Result<_, _>>()?,
+            daily: json
+                .remove("daily")
                 .members_mut()
                 .map(|e| WeatherState::try_from(e.take()))
                 .collect::<Result<_, _>>()?,
@@ -61,12 +73,12 @@ impl TryFrom<json::JsonValue> for OpenWeatherResponse {
 /// ```
 pub struct WeatherState {
     pub time: time::OffsetDateTime,
-    pub sunrise: time::OffsetDateTime,
-    pub sunset: time::OffsetDateTime,
-    pub temp: Temperature,
-    pub wind: Wind,
-    pub clouds: u8,
-    pub condition: WeatherCondition,
+    pub sunrise: Option<time::OffsetDateTime>,
+    pub sunset: Option<time::OffsetDateTime>,
+    pub temp: Option<Temperature>,
+    pub wind: Option<Wind>,
+    pub clouds: Option<u8>,
+    pub condition: Option<WeatherCondition>,
 }
 
 impl TryFrom<json::JsonValue> for WeatherState {
@@ -79,44 +91,28 @@ impl TryFrom<json::JsonValue> for WeatherState {
                     .as_i64()
                     .ok_or("Missing or invalid \"dt\" value.")?,
             ),
-            sunrise: time::OffsetDateTime::from_unix_timestamp(
-                json.remove("sunrise")
-                    .as_i64()
-                    .ok_or("Missing or invalid \"sunrise\" value.")?,
-            ),
-            sunset: time::OffsetDateTime::from_unix_timestamp(
-                json.remove("sunset")
-                    .as_i64()
-                    .ok_or("Missing or invalid \"sunset\" value.")?,
-            ),
-            temp: json
-                .remove("temp")
+            sunrise: json
+                .remove("sunrise")
+                .as_i64()
+                .map(|sunrise| time::OffsetDateTime::from_unix_timestamp(sunrise)),
+            sunset: json
+                .remove("sunset")
+                .as_i64()
+                .map(|sunset| time::OffsetDateTime::from_unix_timestamp(sunset)),
+            temp: json.remove("temp").as_f32().map(|temp| temp.into()),
+            wind: json
+                .remove("wind_speed")
                 .as_f32()
-                .ok_or("Missing or invalid \"temp\" value.")?
-                .into(),
-            wind: Wind {
-                speed: json
-                    .remove("wind_speed")
-                    .as_f32()
-                    .ok_or("Missing or invalid \"wind_speed\" value.")?,
-                direction: json
-                    .remove("wind_deg")
-                    .as_u16()
-                    .ok_or("Missing or invalid \"wind_deg\" value.")?,
-            },
-            clouds: json
-                .remove("clouds")
-                .as_u8()
-                .ok_or("Empty or invalid \"clouds\" value.")?,
+                .zip(json.remove("wind_deg").as_u16())
+                .map(|(speed, direction)| Wind { speed, direction }),
+            clouds: json.remove("clouds").as_u8(),
             condition: json
                 .remove("weather")
                 .members_mut()
                 .next()
-                .ok_or("Empty \"weather\" value.")?
-                .remove("id")
-                .as_u16()
-                .ok_or("Empty or invalid \"weather.id\" value.")?
-                .into(),
+                .map(|weather| weather.remove("id").as_u16())
+                .flatten()
+                .map(|id| id.into()),
         })
     }
 }
