@@ -122,7 +122,7 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
         {
             let text = CairoText::new()
                 .new_text_layout(format!("{}", state.temp))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 3.))
+                .default_attribute(piet::TextAttribute::FontSize(position.width() / 3.))
                 .build()
                 .unwrap();
             ctx.draw_text(
@@ -165,7 +165,7 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
         {
             let text = CairoText::new()
                 .new_text_layout(format!("{}h", state.time.hour()))
-                .default_attribute(piet::TextAttribute::FontSize(position.height() / 3.))
+                .default_attribute(piet::TextAttribute::FontSize(position.width() / 3.))
                 .build()
                 .unwrap();
             ctx.draw_text(
