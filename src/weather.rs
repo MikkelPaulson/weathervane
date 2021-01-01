@@ -2,12 +2,8 @@ use std::convert::{TryFrom, TryInto};
 use std::env;
 use std::fmt;
 
-pub fn query() -> Result<(Option<OpenWeatherResponse>, Option<Vec<u8>>), &'static str> {
-    let response = async {
-        futures::join!(call_open_weather_api(), get_weather_radar())
-    };
-
-    let (open_weather, radar_map) = futures::executor::block_on(response);
+pub async fn query() -> Result<(Option<OpenWeatherResponse>, Option<Vec<u8>>), &'static str> {
+    let (open_weather, radar_map) = tokio::join!(call_open_weather_api(), get_weather_radar());
 
     Ok((
         open_weather.ok().and_then(|s| json::parse(&s).ok()).and_then(|j| j.try_into().ok()),

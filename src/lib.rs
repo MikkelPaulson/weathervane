@@ -4,8 +4,8 @@ pub mod display;
 pub mod image;
 pub mod weather;
 
-pub fn refresh() -> Result<(), &'static str> {
-    let (weather_report, weather_radar) = weather::query().unwrap();
+pub async fn refresh() -> Result<(), &'static str> {
+    let (weather_report, weather_radar) = weather::query().await.unwrap();
     let mut display = display::waveshare::EPaper3_7in::new();
 
     display.on()?;

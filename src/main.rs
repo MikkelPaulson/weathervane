@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     dotenv().ok();
-    weathervane::refresh().unwrap();
+    weathervane::refresh().await.unwrap();
 }
