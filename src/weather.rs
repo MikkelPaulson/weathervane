@@ -6,7 +6,10 @@ pub async fn query() -> Result<(Option<OpenWeatherResponse>, Option<Vec<u8>>), &
     let (open_weather, radar_map) = tokio::join!(call_open_weather_api(), get_weather_radar());
 
     Ok((
-        open_weather.ok().and_then(|s| json::parse(&s).ok()).and_then(|j| j.try_into().ok()),
+        open_weather
+            .ok()
+            .and_then(|s| json::parse(&s).ok())
+            .and_then(|j| j.try_into().ok()),
         radar_map.ok(),
     ))
 }
@@ -410,13 +413,26 @@ async fn get_weather_radar() -> Result<Vec<u8>, &'static str> {
     let page = reqwest::get(&format!(
         "https://weather.gc.ca/radar/index_e.html?id={}",
         env::var("ENVIRONMENT_CANADA_RADAR_ID").unwrap_or_else(|_| "wmn".to_string())
-    )).await.map_err(|_| "Failed to load radar page.")?.text().await.map_err(|_| "Failed to load radar page content.")?;
+    ))
+    .await
+    .map_err(|_| "Failed to load radar page.")?
+    .text()
+    .await
+    .map_err(|_| "Failed to load radar page content.")?;
 
     if let Some(start) = page.find("/data/radar/temp_image") {
         if let Some(end) = page[start..].find('"') {
-        let image_url = &page[start..end];
+            let image_url = &page[start..end];
 
-        return Ok(reqwest::get(image_url).await.map_err(|_| "Failed to load radar image.")?.bytes().await.map_err(|_| "Failed to load radar image content.")?.iter().copied().collect())
+            return Ok(reqwest::get(image_url)
+                .await
+                .map_err(|_| "Failed to load radar image.")?
+                .bytes()
+                .await
+                .map_err(|_| "Failed to load radar image content.")?
+                .iter()
+                .copied()
+                .collect());
         }
     }
     Err("Failed to parse radar image URL.")
