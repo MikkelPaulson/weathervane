@@ -14,7 +14,7 @@ use crate::weather::{
 
 pub fn render(
     weather_report: Option<OpenWeatherResponse>,
-    radar_map: Option<bytes::Bytes>,
+    radar_map: Option<Vec<u8>>,
     ctx: &mut CairoRenderContext,
 ) {
     if let Some(weather_report) = weather_report {
@@ -24,7 +24,13 @@ pub fn render(
             Rect::from_origin_size((0., 270.), (280., 120.)),
         );
 
-        for (i, forecast) in weather_report.hourly.iter().take(6).enumerate() {
+        for (i, forecast) in weather_report
+            .hourly
+            .iter()
+            .filter(|e| e.time > weather_report.current.time)
+            .take(6)
+            .enumerate()
+        {
             draw_forecast(
                 ctx,
                 forecast,
@@ -203,7 +209,7 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
     .unwrap();
 }
 
-fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: bytes::Bytes, position: Rect) {
+fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position: Rect) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
 
