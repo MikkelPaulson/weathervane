@@ -506,7 +506,7 @@ dependencies = [
  "http",
  "indexmap",
  "slab",
- "tokio 0.2.24",
+ "tokio",
  "tokio-util",
  "tracing",
  "tracing-futures",
@@ -587,7 +587,7 @@ dependencies = [
  "itoa",
  "pin-project 1.0.2",
  "socket2",
- "tokio 0.2.24",
+ "tokio",
  "tower-service",
  "tracing",
  "want",
@@ -602,7 +602,7 @@ dependencies = [
  "bytes 0.5.6",
  "hyper",
  "native-tls",
- "tokio 0.2.24",
+ "tokio",
  "tokio-tls",
 ]
 
@@ -1285,7 +1285,7 @@ dependencies = [
  "pin-project-lite 0.2.0",
  "serde",
  "serde_urlencoded",
- "tokio 0.2.24",
+ "tokio",
  "tokio-tls",
  "url",
  "wasm-bindgen",
@@ -1792,27 +1792,17 @@ dependencies = [
  "lazy_static",
  "memchr",
  "mio",
+ "num_cpus",
  "pin-project-lite 0.1.11",
  "slab",
-]
-
-[[package]]
-name = "tokio"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d258221f566b6c803c7b4714abadc080172b272090cdc5e244a6d4dd13c3a6bd"
-dependencies = [
- "autocfg",
- "num_cpus",
- "pin-project-lite 0.2.0",
  "tokio-macros",
 ]
 
 [[package]]
 name = "tokio-macros"
-version = "1.0.0"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42517d2975ca3114b22a16192634e8241dc5cc1f130be194645970cc1c371494"
+checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1826,7 +1816,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a70f4fcd7b3b24fb194f837560168208f669ca8cb70d0c4b862944452396343"
 dependencies = [
  "native-tls",
- "tokio 0.2.24",
+ "tokio",
 ]
 
 [[package]]
@@ -1840,7 +1830,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite 0.1.11",
- "tokio 0.2.24",
+ "tokio",
 ]
 
 [[package]]
@@ -2205,7 +2195,7 @@ dependencies = [
  "resvg",
  "rppal",
  "time",
- "tokio 1.0.1",
+ "tokio",
  "usvg",
 ]
 

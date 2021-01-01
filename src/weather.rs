@@ -422,7 +422,7 @@ async fn get_weather_radar() -> Result<Vec<u8>, &'static str> {
 
     if let Some(start) = page.find("/data/radar/temp_image") {
         if let Some(end) = page[start..].find('"') {
-            let image_url = &page[start..end];
+            let image_url = &page[start..start + end];
 
             return Ok(reqwest::get(image_url)
                 .await
