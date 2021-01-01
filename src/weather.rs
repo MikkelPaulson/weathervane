@@ -2,16 +2,16 @@ use std::convert::{TryFrom, TryInto};
 use std::env;
 use std::fmt;
 
-pub async fn query() -> Result<(Option<OpenWeatherResponse>, Option<Vec<u8>>), &'static str> {
+pub async fn query() -> (Option<OpenWeatherResponse>, Option<Vec<u8>>) {
     let (open_weather, radar_map) = tokio::join!(call_open_weather_api(), get_weather_radar());
 
-    Ok((
+    (
         open_weather
             .ok()
             .and_then(|s| json::parse(&s).ok())
             .and_then(|j| j.try_into().ok()),
         radar_map.ok(),
-    ))
+    )
 }
 
 pub struct OpenWeatherResponse {
@@ -409,33 +409,33 @@ impl From<u16> for CloudsType {
     }
 }
 
-async fn get_weather_radar() -> Result<Vec<u8>, &'static str> {
+async fn get_weather_radar() -> Result<Vec<u8>, String> {
     let page = reqwest::get(&format!(
         "https://weather.gc.ca/radar/index_e.html?id={}",
         env::var("ENVIRONMENT_CANADA_RADAR_ID").unwrap_or_else(|_| "wmn".to_string())
     ))
     .await
-    .map_err(|_| "Failed to load radar page.")?
+    .map_err(|e| format!("{}", e))?
     .text()
     .await
-    .map_err(|_| "Failed to load radar page content.")?;
+    .map_err(|e| format!("{}", e))?;
 
     if let Some(start) = page.find("/data/radar/temp_image") {
         if let Some(end) = page[start..].find('"') {
-            let image_url = &page[start..start + end];
+            let image_url = "https://weather.gc.ca".to_owned() + &page[start..start + end];
 
-            return Ok(reqwest::get(image_url)
+            return Ok(reqwest::get(&image_url)
                 .await
-                .map_err(|_| "Failed to load radar image.")?
+                .map_err(|e| format!("{}", e))?
                 .bytes()
                 .await
-                .map_err(|_| "Failed to load radar image content.")?
+                .map_err(|e| format!("{}", e))?
                 .iter()
                 .copied()
                 .collect());
         }
     }
-    Err("Failed to parse radar image URL.")
+    Err("Failed to parse radar image URL.".to_owned())
 }
 
 async fn call_open_weather_api() -> reqwest::Result<String> {
