@@ -429,8 +429,8 @@ async fn get_weather_radar() -> Result<Vec<u8>, &'static str> {
 async fn call_open_weather_api() -> reqwest::Result<String> {
     reqwest::get(&format!(
         "https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude=minutely,daily&appid={}",
-        env::var("OPENWEATHER_LAT").unwrap_or_else(|_| "45.5".to_string()),
-        env::var("OPENWEATHER_LON").unwrap_or_else(|_| "-73.6".to_string()),
-        env::var("OPENWEATHER_API_KEY").expect("Missing required API key."),
+        env::var("OPEN_WEATHER_LAT").unwrap_or_else(|_| "45.5".to_string()),
+        env::var("OPEN_WEATHER_LON").unwrap_or_else(|_| "-73.6".to_string()),
+        env::var("OPEN_WEATHER_API_KEY").expect("Missing required API key."),
     )).await?.text().await
 }
