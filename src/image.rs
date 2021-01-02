@@ -28,6 +28,7 @@ pub fn render(
             .hourly
             .iter()
             .filter(|e| e.time > weather_report.current.time)
+            .step_by(2)
             .take(6)
             .enumerate()
         {
@@ -94,7 +95,7 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 (
                     (text_area_width - wind_direction.size().width - wind_speed.size().width) / 2.,
                     position.y1
-                        - wind_speed.size().height
+                        - wind_speed.size().height * 1.5
                         - (wind_direction.size().height - wind_speed.size().height) / 2.,
                 ),
             );
@@ -102,7 +103,7 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
                 &wind_speed,
                 (
                     (text_area_width + wind_direction.size().width - wind_speed.size().width) / 2.,
-                    position.y1 - wind_speed.size().height,
+                    position.y1 - wind_speed.size().height * 1.5,
                 ),
             );
         }
