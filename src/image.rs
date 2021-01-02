@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use piet::kurbo::{Point, Rect};
+use piet::kurbo::{Circle, Line, Point, Rect};
 use piet::{RenderContext, Text, TextLayout, TextLayoutBuilder};
 use piet_cairo::{CairoRenderContext, CairoText};
 use resvg;
@@ -285,6 +285,42 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
             palette
         },
     );
+
+    ctx.with_save(|ctx| {
+        ctx.clip(position);
+
+        ctx.stroke(
+            Line::new(
+                (position.width() / 2. - 5., position.height()),
+                (position.width() / 2. + 5., position.height()),
+            ),
+            &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
+            1.,
+        );
+
+        ctx.stroke(
+            Line::new(
+                (position.width() / 2., position.height() - 5.),
+                (position.width() / 2., position.height() + 5.),
+            ),
+            &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
+            1.,
+        );
+
+        for i in (40..position.width() as usize / 2)
+            .step_by(40)
+            .map(|i| i as f64)
+        {
+            ctx.stroke(
+                Circle::new((position.width() / 2., position.height() / 2.), i * 2.),
+                &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
+                1.,
+            );
+        }
+
+        Ok(())
+    })
+    .unwrap();
 }
 
 fn draw_gif<F: Fn(&[u8], &gif::Frame, Option<u8>) -> HashMap<u8, [u8; 4]>>(
