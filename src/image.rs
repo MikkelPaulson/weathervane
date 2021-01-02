@@ -210,148 +210,107 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
 }
 
 fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position: Rect) {
+    draw_gif(
+        ctx,
+        &include_bytes!("../images/radar-rivers.gif")[..],
+        position,
+        |decoder| {
+            let mut palette = HashMap::new();
+
+            for (index, color) in decoder.palette().unwrap().iter().step_by(3).enumerate() {
+                palette.insert(index as u8, [0x80, 0x80, 0x80, *color]);
+            }
+
+            if let Some(index) = decoder.bg_color() {
+                palette.insert(index as u8, [0x00; 4]);
+            }
+
+            palette
+        },
+    );
+
+    draw_gif(ctx, &radar_map[..], position, |decoder| {
+        let frame = decoder.read_next_frame().unwrap().unwrap();
+        let mut scale: Vec<&u8> = Vec::new();
+
+        frame
+            .buffer
+            .iter()
+            .skip(524)
+            .step_by(frame.width as usize)
+            .for_each(|pixel| {
+                if !scale.contains(&pixel) {
+                    scale.push(pixel);
+                }
+            });
+
+        let mut palette = HashMap::new();
+        for i in (0x55..0xFF).step_by(0x2a) {
+            if let Some(&index) = scale.pop() {
+                palette.insert(index, [0x00, 0x00, 0x00, i]);
+            }
+        }
+        while let Some(&index) = scale.pop() {
+            palette.insert(index, [0x00, 0x00, 0x00, 0xFF]);
+        }
+
+        palette
+    });
+
+    draw_gif(
+        ctx,
+        &include_bytes!("../images/radar-towns.gif")[..],
+        position,
+        |decoder| {
+            let mut palette = HashMap::new();
+
+            for (index, color) in decoder.palette().unwrap().chunks_exact(3).enumerate() {
+                palette.insert(index as u8, [color[0], color[1], color[2], 0xFF]);
+            }
+
+            if let Some(index) = decoder.bg_color() {
+                palette.insert(index as u8, [0x00; 4]);
+            }
+
+            palette
+        },
+    );
+}
+
+fn draw_gif<F: Fn(&mut gif::Decoder<&[u8]>) -> HashMap<u8, [u8; 4]>>(
+    ctx: &mut CairoRenderContext,
+    image: &[u8],
+    position: Rect,
+    palette_callback: F,
+) {
     ctx.with_save(|ctx| {
         ctx.clip(position);
 
-        {
-            let (buffer, frame_width, frame_height) = {
-                let mut decoder =
-                    gif::Decoder::new(&include_bytes!("../images/radar-rivers.gif")[..]).unwrap();
-                let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
-                let bg_color = decoder.bg_color().map(|i| i as u8);
-                let frame = decoder.read_next_frame().unwrap().unwrap();
-                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
+        let mut decoder = gif::Decoder::new(image).unwrap();
+        let (width, height) = (decoder.width() as usize, decoder.height() as usize);
 
-                for color in frame.buffer.iter() {
-                    if Some(*color) == bg_color {
-                        buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
-                    } else {
-                        buffer.extend_from_slice(
-                            &[0x80, 0x80, 0x80, 0xFF - palette[*color as usize * 3]][..],
-                        );
-                    }
-                }
+        let palette = palette_callback(&mut decoder);
+        let mut buffer: Vec<u8> = Vec::with_capacity(width * height * 4);
 
-                (buffer, frame.width as usize, frame.height as usize)
-            };
-
-            let rivers = ctx
-                .make_image(
-                    frame_width,
-                    frame_height,
-                    &buffer,
-                    piet::ImageFormat::RgbaPremul,
-                )
-                .unwrap();
-
-            ctx.draw_image_area(
-                &rivers,
-                Rect::from_center_size(
-                    (frame_height as f64 / 2., frame_height as f64 / 2.),
-                    position.size(),
-                ),
-                position,
-                piet::InterpolationMode::Bilinear,
-            );
+        for index in decoder.read_next_frame().unwrap().unwrap().buffer.iter() {
+            buffer.extend_from_slice(&palette.get(index).unwrap_or(&[0x00; 4])[..]);
         }
 
-        {
-            let (buffer, frame_width, frame_height) = {
-                let mut decoder = gif::Decoder::new(&radar_map[..]).unwrap();
-                let frame = decoder.read_next_frame().unwrap().unwrap();
-                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
-                let mut scale: Vec<u8> = Vec::new();
+        let ctx_image = ctx
+            .make_image(
+                width as usize,
+                height as usize,
+                &buffer,
+                piet::ImageFormat::RgbaPremul,
+            )
+            .unwrap();
 
-                frame
-                    .buffer
-                    .iter()
-                    .skip(524)
-                    .step_by(frame.width as usize)
-                    .for_each(|pixel| {
-                        if !scale.contains(pixel) {
-                            scale.push(*pixel);
-                        }
-                    });
-
-                let mut palette: HashMap<u8, u8> = HashMap::new();
-                for i in (0x55..0xFF).step_by(0x2a) {
-                    if let Some(index) = scale.pop() {
-                        palette.insert(index, i);
-                    }
-                }
-                while let Some(index) = scale.pop() {
-                    palette.insert(index, 0xFF);
-                }
-
-                for color in frame.buffer.iter() {
-                    buffer.extend_from_slice(
-                        &[0x00, 0x00, 0x00, *palette.get(color).unwrap_or(&0x00)][..],
-                    );
-                }
-
-                (buffer, frame.width as usize, frame.height as usize)
-            };
-
-            let radar_map = ctx
-                .make_image(
-                    frame_width,
-                    frame_height,
-                    &buffer,
-                    piet::ImageFormat::RgbaPremul,
-                )
-                .unwrap();
-            ctx.draw_image_area(
-                &radar_map,
-                Rect::from_center_size(
-                    (frame_height as f64 / 2., frame_height as f64 / 2.),
-                    position.size(),
-                ),
-                position,
-                piet::InterpolationMode::Bilinear,
-            );
-        }
-
-        {
-            let (buffer, frame_width, frame_height) = {
-                let mut decoder =
-                    gif::Decoder::new(&include_bytes!("../images/radar-towns.gif")[..]).unwrap();
-                let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
-                let bg_color = decoder.bg_color().map(|i| i as u8);
-                let frame = decoder.read_next_frame().unwrap().unwrap();
-                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
-
-                for color in frame.buffer.iter() {
-                    if Some(*color) == bg_color {
-                        buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
-                    } else {
-                        let i = *color as usize * 3;
-                        buffer.extend_from_slice(&palette[i..i + 3]);
-                        buffer.push(0xFF);
-                    }
-                }
-
-                (buffer, frame.width as usize, frame.height as usize)
-            };
-
-            let towns = ctx
-                .make_image(
-                    frame_width,
-                    frame_height,
-                    &buffer,
-                    piet::ImageFormat::RgbaPremul,
-                )
-                .unwrap();
-
-            ctx.draw_image_area(
-                &towns,
-                Rect::from_center_size(
-                    (frame_height as f64 / 2., frame_height as f64 / 2.),
-                    position.size(),
-                ),
-                position,
-                piet::InterpolationMode::Bilinear,
-            );
-        }
+        ctx.draw_image_area(
+            &ctx_image,
+            Rect::from_center_size((height as f64 / 2., height as f64 / 2.), position.size()),
+            position,
+            piet::InterpolationMode::Bilinear,
+        );
 
         Ok(())
     })
