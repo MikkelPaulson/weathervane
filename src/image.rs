@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::iter;
 
 use piet::kurbo::{Point, Rect};
 use piet::{RenderContext, Text, TextLayout, TextLayoutBuilder};
@@ -227,9 +226,9 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
                     if Some(*color) == bg_color {
                         buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
                     } else {
-                        let i = *color as usize * 3;
-                        buffer.extend_from_slice(&palette[i..i + 3]);
-                        buffer.push(0xFF);
+                        buffer.extend_from_slice(
+                            &[0x80, 0x80, 0x80, palette[*color as usize * 3]][..],
+                        );
                     }
                 }
 
@@ -257,10 +256,10 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
         }
 
         {
-            let mut decoder = gif::Decoder::new(&radar_map[..]).unwrap();
-            let (palette, frame, frame_width, frame_height) = {
+            let (buffer, frame_width, frame_height) = {
+                let mut decoder = gif::Decoder::new(&radar_map[..]).unwrap();
                 let frame = decoder.read_next_frame().unwrap().unwrap();
-
+                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
                 let mut scale: Vec<u8> = Vec::new();
 
                 frame
@@ -284,22 +283,20 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
                     palette.insert(index, 0xFF);
                 }
 
-                (palette, frame, frame.width as usize, frame.height as usize)
+                for color in frame.buffer.iter() {
+                    buffer.extend_from_slice(
+                        &[0x00, 0x00, 0x00, *palette.get(color).unwrap_or(&0x00)][..],
+                    );
+                }
+
+                (buffer, frame.width as usize, frame.height as usize)
             };
 
             let radar_map = ctx
                 .make_image(
                     frame_width,
                     frame_height,
-                    &frame
-                        .buffer
-                        .iter()
-                        .flat_map(|color: &u8| {
-                            iter::repeat(0x00)
-                                .take(3)
-                                .chain(iter::once(palette.get(color).unwrap_or(&0x00)).copied())
-                        })
-                        .collect::<Vec<u8>>()[..],
+                    &buffer,
                     piet::ImageFormat::RgbaPremul,
                 )
                 .unwrap();
