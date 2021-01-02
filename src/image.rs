@@ -214,28 +214,18 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
         ctx.clip(position);
 
         {
-            let mut decoder =
-                gif::Decoder::new(&include_bytes!("../images/radar-rivers.gif")[..]).unwrap();
-            let (palette, frame, frame_width, frame_height) = {
-                let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
-                let frame = decoder.read_next_frame().unwrap().unwrap();
-
-                (palette, frame, frame.width as usize, frame.height as usize)
-            };
+            let mut decode_options = gif::DecodeOptions::new();
+            decode_options.set_color_output(gif::ColorOutput::RGBA);
+            let mut decoder = decode_options
+                .read_info(&include_bytes!("../images/radar-rivers.gif")[..])
+                .unwrap();
+            let frame = decoder.read_next_frame().unwrap().unwrap();
 
             let rivers = ctx
                 .make_image(
-                    frame_width,
-                    frame_height,
-                    &frame
-                        .buffer
-                        .iter()
-                        .flat_map(|color: &u8| {
-                            iter::repeat(0x55).take(3).chain(iter::once(
-                                0xFF - palette.get((color * 3) as usize).unwrap_or(&0x00),
-                            ))
-                        })
-                        .collect::<Vec<u8>>()[..],
+                    frame.width as usize,
+                    frame.height as usize,
+                    &frame.buffer,
                     piet::ImageFormat::RgbaPremul,
                 )
                 .unwrap();
@@ -243,7 +233,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
             ctx.draw_image_area(
                 &rivers,
                 Rect::from_center_size(
-                    (frame_height as f64 / 2., frame_height as f64 / 2.),
+                    (frame.height as f64 / 2., frame.height as f64 / 2.),
                     position.size(),
                 ),
                 position,
@@ -302,6 +292,34 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
                 &radar_map,
                 Rect::from_center_size(
                     (frame_height as f64 / 2., frame_height as f64 / 2.),
+                    position.size(),
+                ),
+                position,
+                piet::InterpolationMode::Bilinear,
+            );
+        }
+
+        {
+            let mut decode_options = gif::DecodeOptions::new();
+            decode_options.set_color_output(gif::ColorOutput::RGBA);
+            let mut decoder = decode_options
+                .read_info(&include_bytes!("../images/radar-towns.gif")[..])
+                .unwrap();
+            let frame = decoder.read_next_frame().unwrap().unwrap();
+
+            let rivers = ctx
+                .make_image(
+                    frame.width as usize,
+                    frame.height as usize,
+                    &frame.buffer,
+                    piet::ImageFormat::RgbaPremul,
+                )
+                .unwrap();
+
+            ctx.draw_image_area(
+                &rivers,
+                Rect::from_center_size(
+                    (frame.height as f64 / 2., frame.height as f64 / 2.),
                     position.size(),
                 ),
                 position,
