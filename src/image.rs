@@ -215,28 +215,32 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
         ctx.clip(position);
 
         {
-            let mut decoder =
-                gif::Decoder::new(&include_bytes!("../images/radar-rivers.gif")[..]).unwrap();
-            let (palette, frame, frame_width, frame_height) = {
+            let (buffer, frame_width, frame_height) = {
+                let mut decoder =
+                    gif::Decoder::new(&include_bytes!("../images/radar-rivers.gif")[..]).unwrap();
                 let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
+                let bg_color = decoder.bg_color().map(|i| i as u8);
                 let frame = decoder.read_next_frame().unwrap().unwrap();
+                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
 
-                (palette, frame, frame.width as usize, frame.height as usize)
+                for color in frame.buffer.iter() {
+                    if Some(*color) == bg_color {
+                        buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
+                    } else {
+                        let i = *color as usize * 3;
+                        buffer.extend_from_slice(&palette[i..i + 3]);
+                        buffer.push(0xFF);
+                    }
+                }
+
+                (buffer, frame.width as usize, frame.height as usize)
             };
 
             let rivers = ctx
                 .make_image(
                     frame_width,
                     frame_height,
-                    &frame
-                        .buffer
-                        .iter()
-                        .flat_map(|color: &u8| {
-                            iter::repeat(0x55).take(3).chain(iter::once(
-                                0xFF - palette.get((color * 3) as usize).unwrap_or(&0x00),
-                            ))
-                        })
-                        .collect::<Vec<u8>>()[..],
+                    &buffer,
                     piet::ImageFormat::RgbaPremul,
                 )
                 .unwrap();
@@ -301,6 +305,48 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
                 .unwrap();
             ctx.draw_image_area(
                 &radar_map,
+                Rect::from_center_size(
+                    (frame_height as f64 / 2., frame_height as f64 / 2.),
+                    position.size(),
+                ),
+                position,
+                piet::InterpolationMode::Bilinear,
+            );
+        }
+
+        {
+            let (buffer, frame_width, frame_height) = {
+                let mut decoder =
+                    gif::Decoder::new(&include_bytes!("../images/radar-towns.gif")[..]).unwrap();
+                let palette: Vec<u8> = decoder.palette().unwrap().iter().copied().collect();
+                let bg_color = decoder.bg_color().map(|i| i as u8);
+                let frame = decoder.read_next_frame().unwrap().unwrap();
+                let mut buffer: Vec<u8> = Vec::with_capacity(frame.buffer.len() * 4);
+
+                for color in frame.buffer.iter() {
+                    if Some(*color) == bg_color {
+                        buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
+                    } else {
+                        let i = *color as usize * 3;
+                        buffer.extend_from_slice(&palette[i..i + 3]);
+                        buffer.push(0xFF);
+                    }
+                }
+
+                (buffer, frame.width as usize, frame.height as usize)
+            };
+
+            let towns = ctx
+                .make_image(
+                    frame_width,
+                    frame_height,
+                    &buffer,
+                    piet::ImageFormat::RgbaPremul,
+                )
+                .unwrap();
+
+            ctx.draw_image_area(
+                &towns,
                 Rect::from_center_size(
                     (frame_height as f64 / 2., frame_height as f64 / 2.),
                     position.size(),
