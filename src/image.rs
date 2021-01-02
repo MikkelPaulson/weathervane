@@ -218,7 +218,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
             let mut palette = HashMap::new();
 
             for (index, color) in image_palette.iter().step_by(3).enumerate() {
-                palette.insert(index as u8, [0x80, 0x80, 0x80, *color]);
+                palette.insert(index as u8, [0x80, 0x80, 0x80, 0xFF - *color]);
             }
 
             if let Some(index) = bg_color {
@@ -255,6 +255,12 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
             }
             while let Some(&index) = scale.pop() {
                 palette.insert(index, [0x00, 0x00, 0x00, 0xFF]);
+
+                // Ignore the first few colours, including the black also used for
+                // the US/Canada border.
+                if scale.len() < 4 {
+                    break;
+                }
             }
 
             palette
