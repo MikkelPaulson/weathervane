@@ -227,7 +227,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
                         buffer.extend_from_slice(&[0x00, 0x00, 0x00, 0x00][..]);
                     } else {
                         buffer.extend_from_slice(
-                            &[0x80, 0x80, 0x80, palette[*color as usize * 3]][..],
+                            &[0x80, 0x80, 0x80, 0xFF - palette[*color as usize * 3]][..],
                         );
                     }
                 }
