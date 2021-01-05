@@ -7,8 +7,8 @@ use resvg;
 use usvg;
 
 use crate::weather::{
-    AtmosphereType, CloudsType, OpenWeatherResponse, RainType, SnowType, WeatherCondition,
-    WeatherState,
+    AtmosphereType, CloudsType, OpenWeatherResponse, RainType, SnowType, ThunderstormType,
+    WeatherCondition, WeatherState,
 };
 
 pub fn render(
@@ -378,70 +378,57 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
 
     usvg::Tree::from_str(
         match &state.condition {
-            Some(WeatherCondition::Thunderstorm(_)) if partly_cloudy => {
-                if daytime {
-                    include_str!("../images/weather/022-storm-1.svg")
-                } else {
-                    include_str!("../images/weather/042-storm-2.svg")
+            Some(WeatherCondition::Thunderstorm(subtype)) => match subtype {
+                ThunderstormType::ThunderstormWithLightRain
+                | ThunderstormType::ThunderstormWithRain
+                | ThunderstormType::ThunderstormWithHeavyRain => {
+                    include_str!("../images/cute-weather/006-thunder.svg")
                 }
+                _ => include_str!("../images/cute-weather/021-thunderstorm.svg"),
+            },
+            Some(WeatherCondition::Drizzle(_)) if partly_cloudy => {
+                include_str!("../images/cute-weather/024-sunny.svg")
             }
-            Some(WeatherCondition::Thunderstorm(_)) => {
-                include_str!("../images/weather/043-rain-1.svg")
+            Some(WeatherCondition::Drizzle(_)) => {
+                include_str!("../images/cute-weather/004-rain.svg")
             }
-            Some(WeatherCondition::Drizzle(_)) => include_str!("../images/weather/046-drizzle.svg"),
             Some(WeatherCondition::Rain(subtype)) => match subtype {
-                RainType::FreezingRain => include_str!("../images/weather/014-icicles.svg"),
-                _ if partly_cloudy => {
-                    if daytime {
-                        include_str!("../images/weather/011-cloudy.svg")
-                    } else {
-                        include_str!("../images/weather/013-night-1.svg")
-                    }
-                }
-                _ => {
-                    include_str!("../images/weather/004-rainy.svg")
-                }
+                RainType::FreezingRain => include_str!("../images/cute-weather/027-sleet.svg"),
+                _ => include_str!("../images/cute-weather/026-umbrella.svg"),
             },
             Some(WeatherCondition::Snow(subtype)) => match subtype {
                 SnowType::Sleet | SnowType::LightShowerSleet | SnowType::ShowerSleet => {
-                    include_str!("../images/weather/031-hail.svg")
+                    include_str!("../images/cute-weather/014-hail.svg")
                 }
                 SnowType::LightRainAndSnow
                 | SnowType::RainAndSnow
                 | SnowType::LightShowerSnow
                 | SnowType::ShowerSnow
-                | SnowType::HeavyShowerSnow => include_str!("../images/weather/024-snowy.svg"),
-                _ if partly_cloudy => {
-                    if daytime {
-                        include_str!("../images/weather/032-snowy-1.svg")
-                    } else {
-                        include_str!("../images/weather/002-night.svg")
-                    }
-                }
-                _ => include_str!("../images/weather/041-snowy-2.svg"),
+                | SnowType::HeavyShowerSnow => include_str!("../images/cute-weather/027-sleet.svg"),
+                _ => include_str!("../images/cute-weather/018-snowflake.svg"),
             },
             Some(WeatherCondition::Atmosphere(subtype)) => match subtype {
-                AtmosphereType::Tornado => include_str!("../images/weather/016-tornado-1.svg"),
-                AtmosphereType::Squalls => include_str!("../images/weather/015-windy-1.svg"),
-                _ => include_str!("../images/weather/045-fog.svg"),
+                AtmosphereType::Tornado => include_str!("../images/cute-weather/022-tornado.svg"),
+                AtmosphereType::Squalls => include_str!("../images/cute-weather/012-windy.svg"),
+                _ if daytime => include_str!("../images/cute-weather/019-fog.svg"),
+                _ => include_str!("../images/cute-weather/028-fog.svg"),
             },
             Some(WeatherCondition::Clear) if daytime => {
-                include_str!("../images/weather/044-sun.svg")
+                include_str!("../images/cute-weather/001-sunny.svg")
             }
-            Some(WeatherCondition::Clear) => include_str!("../images/weather/034-night-3.svg"),
-            Some(WeatherCondition::Clouds(subtype)) => match subtype {
-                CloudsType::FewClouds | CloudsType::ScatteredClouds if daytime => {
-                    include_str!("../images/weather/033-cloudy-3.svg")
-                }
-                CloudsType::FewClouds => {
-                    include_str!("../images/weather/023-night-2.svg")
-                }
-                CloudsType::ScatteredClouds => {
-                    include_str!("../images/weather/028-cloudy-2.svg")
-                }
-                _ => include_str!("../images/weather/035-cloudy-4.svg"),
-            },
-            _ => include_str!("../images/weather/019-weathercock.svg"),
+            Some(WeatherCondition::Clear) => {
+                include_str!("../images/cute-weather/023-crescent moon.svg")
+            }
+            Some(WeatherCondition::Clouds(_)) if partly_cloudy && daytime => {
+                include_str!("../images/cute-weather/011-sunny.svg")
+            }
+            Some(WeatherCondition::Clouds(_)) if partly_cloudy => {
+                include_str!("../images/cute-weather/025-crescent moon.svg")
+            }
+            Some(WeatherCondition::Clouds(_)) => {
+                include_str!("../images/cute-weather/020-cloudy.svg")
+            }
+            _ => include_str!("../images/cute-weather/009-thermometer.svg"),
         },
         &usvg::Options::default(),
     )
