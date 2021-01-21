@@ -7,8 +7,8 @@ use resvg;
 use usvg;
 
 use crate::weather::{
-    AtmosphereType, CloudsType, OpenWeatherResponse, RainType, SnowType, ThunderstormType,
-    WeatherCondition, WeatherState,
+    AtmosphereType, OpenWeatherResponse, RainType, SnowType, ThunderstormType, WeatherCondition,
+    WeatherState,
 };
 
 pub fn render(
@@ -405,6 +405,7 @@ fn get_weather_icon(state: &WeatherState) -> usvg::Tree {
                 | SnowType::LightShowerSnow
                 | SnowType::ShowerSnow
                 | SnowType::HeavyShowerSnow => include_str!("../images/cute-weather/027-sleet.svg"),
+                SnowType::LightSnow => include_str!("../images/cute-weather/007-snow.svg"),
                 _ => include_str!("../images/cute-weather/018-snowflake.svg"),
             },
             Some(WeatherCondition::Atmosphere(subtype)) => match subtype {
