@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use piet::kurbo::{Circle, Line, Point, Rect};
+use piet::kurbo::{Affine, Circle, Line, Point, Rect};
 use piet::{RenderContext, Text, TextLayout, TextLayoutBuilder};
 use piet_cairo::{CairoRenderContext, CairoText};
 use resvg;
@@ -16,11 +16,22 @@ pub fn render(
     radar_map: Option<Vec<u8>>,
     ctx: &mut CairoRenderContext,
 ) {
+    // Render the image upside down (since the device is mounted upside down).
+    ctx.transform(Affine::translate((280., 480.)));
+    ctx.transform(Affine::rotate(std::f64::consts::PI));
+
+    // Flip the layout daily to mitigate burn-in. (Is burn-in a thing with e-paper?)
+    let radar_on_top = time::OffsetDateTime::try_now_local()
+        .unwrap_or_else(|_| time::OffsetDateTime::now_utc())
+        .day()
+        % 2
+        == 0;
+
     if let Some(weather_report) = weather_report {
         draw_current_conditions(
             ctx,
             &weather_report.current,
-            Rect::from_origin_size((0., 270.), (280., 120.)),
+            Rect::from_origin_size((0., if radar_on_top { 265. } else { 95. }), (280., 120.)),
         );
 
         for (i, forecast) in weather_report
@@ -28,13 +39,16 @@ pub fn render(
             .iter()
             .filter(|e| e.time > weather_report.current.time)
             .step_by(2)
-            .take(6)
+            .take(5)
             .enumerate()
         {
             draw_forecast(
                 ctx,
                 forecast,
-                Rect::from_origin_size((280. / 6. * i as f64, 400.), (280. / 6., 80.)),
+                Rect::from_origin_size(
+                    (15. + 50. * i as f64, if radar_on_top { 390. } else { 10. }),
+                    (50., 80.),
+                ),
             );
         }
     }
@@ -43,7 +57,14 @@ pub fn render(
         draw_weather_radar(
             ctx,
             radar_map,
-            Rect::from_origin_size(Point::ORIGIN, (280., 260.)),
+            Rect::from_origin_size(
+                if radar_on_top {
+                    Point::ORIGIN
+                } else {
+                    (0., 220.).into()
+                },
+                (280., 260.),
+            ),
         );
     }
 }
@@ -57,7 +78,11 @@ fn draw_current_conditions(ctx: &mut CairoRenderContext, state: &WeatherState, p
 
         if let Some(temp) = &state.temp {
             let text = CairoText::new()
-                .new_text_layout(format!(" {}", temp))
+                .new_text_layout(format!(
+                    "{}{}",
+                    if temp.celsius() > -10. { " " } else { "" },
+                    temp,
+                ))
                 .default_attribute(piet::TextAttribute::FontSize(position.height() / 3. * 2.))
                 .build()
                 .unwrap();
