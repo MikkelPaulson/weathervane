@@ -235,13 +235,20 @@ fn draw_forecast(ctx: &mut CairoRenderContext, state: &WeatherState, position: R
 }
 
 fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position: Rect) {
+    // Draw radar circles
     ctx.with_save(|ctx| {
         ctx.clip(position);
 
         ctx.stroke(
             Line::new(
-                (position.width() / 2. - 5., position.height() / 2.),
-                (position.width() / 2. + 5., position.height() / 2.),
+                (
+                    position.width() / 2. + position.x0 - 5.,
+                    position.height() / 2. + position.y0,
+                ),
+                (
+                    position.width() / 2. + position.x0 + 5.,
+                    position.height() / 2. + position.y0,
+                ),
             ),
             &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
             2.,
@@ -249,8 +256,14 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
 
         ctx.stroke(
             Line::new(
-                (position.width() / 2., position.height() / 2. - 5.),
-                (position.width() / 2., position.height() / 2. + 5.),
+                (
+                    position.width() / 2. + position.x0,
+                    position.height() / 2. + position.y0 - 5.,
+                ),
+                (
+                    position.width() / 2. + position.x0,
+                    position.height() / 2. + position.y0 + 5.,
+                ),
             ),
             &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
             1.5,
@@ -261,7 +274,13 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
             .map(|i| i as f64)
         {
             ctx.stroke(
-                Circle::new((position.width() / 2., position.height() / 2.), i * 2.),
+                Circle::new(
+                    (
+                        position.width() / 2. + position.x0,
+                        position.height() / 2. + position.y0,
+                    ),
+                    i * 2.,
+                ),
                 &piet::Color::rgb8(0xAA, 0xAA, 0xAA),
                 1.5,
             );
@@ -271,6 +290,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
     })
     .unwrap();
 
+    // Draw rivers
     draw_gif(
         ctx,
         &include_bytes!("../images/radar-rivers.gif")[..],
@@ -290,6 +310,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
         },
     );
 
+    // Draw radar map
     draw_gif(
         ctx,
         &radar_map[..],
@@ -328,6 +349,7 @@ fn draw_weather_radar(ctx: &mut CairoRenderContext, radar_map: Vec<u8>, position
         },
     );
 
+    // Draw town names
     draw_gif(
         ctx,
         &include_bytes!("../images/radar-towns.gif")[..],
