@@ -410,32 +410,41 @@ impl From<u16> for CloudsType {
 }
 
 async fn get_weather_radar() -> Result<Vec<u8>, String> {
-    let page = reqwest::get(&format!(
-        "https://weather.gc.ca/radar/index_e.html?id={}",
-        env::var("ENVIRONMENT_CANADA_RADAR_ID").unwrap_or_else(|_| "wmn".to_string())
-    ))
-    .await
-    .map_err(|e| format!("{}", e))?
-    .text()
-    .await
-    .map_err(|e| format!("{}", e))?;
+    let mut url = format!(
+        "https://dd.weather.gc.ca/radar/PRECIPET/GIF/{}/",
+        env::var("ENVIRONMENT_CANADA_RADAR_ID").unwrap_or_else(|_| "CASBV".to_string())
+    );
 
-    if let Some(start) = page.find("/data/radar/temp_image") {
-        if let Some(end) = page[start..].find('"') {
-            let image_url = "https://weather.gc.ca".to_owned() + &page[start..start + end];
+    let page = reqwest::get(&url)
+        .await
+        .map_err(|e| format!("{}", e))?
+        .text()
+        .await
+        .map_err(|e| format!("{}", e))?;
 
-            return Ok(reqwest::get(&image_url)
-                .await
-                .map_err(|e| format!("{}", e))?
-                .bytes()
-                .await
-                .map_err(|e| format!("{}", e))?
-                .iter()
-                .copied()
-                .collect());
+    let search_str = "<img src=\"/icons/image2.gif\" alt=\"[IMG]\"> <a href=\"";
+
+    if let Some(filename) = page.lines().rev().find_map(|s| {
+        if s.starts_with(search_str) && s.contains("RAIN_A11Y.gif") {
+            if let Some(end) = s[search_str.len()..].find('"') {
+                return Some(&s[search_str.len()..search_str.len() + end]);
+            }
         }
+        None
+    }) {
+        url.push_str(filename);
+        return Ok(reqwest::get(&url)
+            .await
+            .map_err(|e| format!("{}", e))?
+            .bytes()
+            .await
+            .map_err(|e| format!("{}", e))?
+            .iter()
+            .copied()
+            .collect());
     }
-    Err("Failed to parse radar image URL.".to_owned())
+
+    Err(format!("Failed to parse radar URL: {}", url))
 }
 
 async fn call_open_weather_api() -> reqwest::Result<String> {
